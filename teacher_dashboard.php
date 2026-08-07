@@ -75,7 +75,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
             <p class="card-desc">Publish chapter summaries, PDF notes, and external video tutorial links for Grade 10 students.</p>
-            <a href="manage_materials.php" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Manage Materials</a>
+            <a href="/grade10-elearning/manage_materials.php" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Manage Materials</a>
         </div>
 
         
@@ -89,7 +89,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
             <p class="card-desc">Post homework assignments with due dates and review/grade student answer submissions.</p>
-            <a href="manage_assignments.php" class="btn btn-primary" style="background: #10b981;"><i class="fa-solid fa-arrow-right"></i> Manage Assignments</a>
+            <a href="/grade10-elearning/manage_assignments.php" class="btn btn-primary" style="background: #10b981;"><i class="fa-solid fa-arrow-right"></i> Manage Assignments</a>
         </div>
     </div>
 </div>
@@ -98,7 +98,7 @@ require_once __DIR__ . '/includes/header.php';
 <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h2 style="font-size: 1.3rem; color: white;"><i class="fa-solid fa-inbox"></i> Recent Student Submissions</h2>
-        <a href="manage_assignments.php" class="btn btn-secondary btn-sm">View All Submissions</a>
+        <a href="/grade10-elearning/manage_assignments.php" class="btn btn-secondary btn-sm">View All Submissions</a>
     </div>
 
     <div class="table-container">
@@ -138,7 +138,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <a href="manage_assignments.php?evaluate=<?= $sub['id'] ?>" class="btn btn-primary btn-sm">Grade Submission</a>
+                                <a href="/grade10-elearning/manage_assignments.php?evaluate=<?= $sub['id'] ?>" class="btn btn-primary btn-sm">Grade Submission</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

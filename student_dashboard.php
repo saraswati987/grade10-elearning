@@ -81,7 +81,7 @@ require_once __DIR__ . '/includes/header.php';
                         <span style="font-size: 0.75rem; color: #94a3b8;"><?= htmlspecialchars($sub['code']) ?></span>
                     </div>
                 </div>
-                <a href="subject_detail.php?id=<?= $sub['id'] ?>" class="btn btn-primary btn-sm" style="margin-top: 10px; width: 100%;">
+                <a href="/grade10-elearning/subject_detail.php?id=<?= $sub['id'] ?>" class="btn btn-primary btn-sm" style="margin-top: 10px; width: 100%;">
                     Open Subject Hub <i class="fa-solid fa-chevron-right"></i>
                 </a>
             </div>
@@ -121,7 +121,7 @@ require_once __DIR__ . '/includes/header.php';
                                             Submitted (Grade: <?= htmlspecialchars($assign['grade']) ?>)
                                         </span>
                                     <?php else: ?>
-                                        <a href="submit_assignment.php?id=<?= $assign['id'] ?>" class="btn btn-primary btn-sm">
+                                        <a href="/grade10-elearning/submit_assignment.php?id=<?= $assign['id'] ?>" class="btn btn-primary btn-sm">
                                             Submit Now
                                         </a>
                                     <?php endif; ?>

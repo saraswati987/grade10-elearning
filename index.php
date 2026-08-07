@@ -21,12 +21,12 @@ try {
 
         <?php if (!is_logged_in()): ?>
             <div style="display: flex; gap: 15px;">
-                <a href="register.php" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Join as Student</a>
-                <a href="login.php" class="btn btn-secondary"><i class="fa-solid fa-right-to-bracket"></i> Login to Portal</a>
+                <a href="/grade10-elearning/register.php" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Join as Student</a>
+                <a href="/grade10-elearning/login.php" class="btn btn-secondary"><i class="fa-solid fa-right-to-bracket"></i> Login to Portal</a>
             </div>
         <?php else: ?>
             <div style="display: flex; gap: 15px;">
-                <a href="<?= $_SESSION['user_role'] === 'student' ? 'student_dashboard.php' : 'teacher_dashboard.php' ?>" class="btn btn-primary">
+                <a href="<?= $_SESSION['user_role'] === 'student' ? '/grade10-elearning/student_dashboard.php' : '/grade10-elearning/teacher_dashboard.php' ?>" class="btn btn-primary">
                     <i class="fa-solid fa-gauge"></i> Go to Dashboard
                 </a>
             </div>
@@ -50,7 +50,7 @@ try {
         <strong style="color: #c084fc;"><i class="fa-solid fa-database"></i> Database First-Time Setup</strong>
         <p style="color: #94a3b8; font-size: 0.9rem;">Using XAMPP? Initialize your MySQL database and pre-seed demo accounts with 1-click.</p>
     </div>
-    <a href="setup_database.php" class="btn btn-sm" style="background: #8b5cf6; color: white;"><i class="fa-solid fa-wrench"></i> Run Setup Wizard</a>
+    <a href="/grade10-elearning/setup_database.php" class="btn btn-sm" style="background: #8b5cf6; color: white;"><i class="fa-solid fa-wrench"></i> Run Setup Wizard</a>
 </div>
 
 <!-- Subjects Catalog Grid -->
@@ -78,7 +78,7 @@ try {
             </div>
 
             <div>
-                <a href="subject_detail.php?id=<?= $subject['id'] ?>" class="btn btn-secondary" style="width: 100%;">
+                <a href="/grade10-elearning/subject_detail.php?id=<?= $subject['id'] ?>" class="btn btn-secondary" style="width: 100%;">
                     View Notes & Assignments <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>
