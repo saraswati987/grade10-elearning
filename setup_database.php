@@ -13,15 +13,19 @@ try {
     $probe = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
-    $alreadyInstalled = (int)$probe->query("SELECT COUNT(*) FROM users")->fetchColumn() > 0;
+    // Any existing table counts as installed — re-importing over a partial
+    // install fails with a raw SQL error, which helps nobody.
+    $alreadyInstalled = (int)$probe->query(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = " . $probe->quote($dbname)
+    )->fetchColumn() > 0;
 } catch (PDOException $e) {
-    $alreadyInstalled = false; // No database or no tables yet — installation needed.
+    $alreadyInstalled = false; // No database yet — installation needed.
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($alreadyInstalled) {
         $status = 'danger';
-        $message = 'The database already contains accounts. Re-running setup is blocked so existing data is not overwritten.';
+        $message = 'The database already exists. Re-running setup is blocked so existing data is not overwritten — drop the ' . $dbname . ' database in phpMyAdmin first if you want a fresh install.';
     } else {
         try {
             $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $username, $password, [

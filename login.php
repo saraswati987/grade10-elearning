@@ -94,16 +94,6 @@ require_once __DIR__ . '/includes/header.php';
 
             <button type="submit" class="btn btn-primary btn-block">Login</button>
         </form>
-
-        <hr>
-
-        <div class="text-center">
-            <p class="form-hint">Demo accounts &mdash; password <code>password123</code></p>
-            <div class="page-actions page-actions-center">
-                <button type="button" class="btn btn-secondary btn-sm" data-demo="student@school.edu.np">Student demo</button>
-                <button type="button" class="btn btn-secondary btn-sm" data-demo="teacher@school.edu.np">Teacher demo</button>
-            </div>
-        </div>
     </div>
 
     <p class="text-center text-muted">

@@ -1,9 +1,11 @@
 <?php
 // config/db.php - Database connection (XAMPP MySQL defaults)
-$host = 'localhost';
-$dbname = 'elearning_db';
-$username = 'root';
-$password = ''; // Default XAMPP MySQL root password is empty
+// XAMPP defaults. The env vars are only there so the app can be pointed at
+// another MySQL (a test instance) without editing this file.
+$host     = getenv('DB_HOST') ?: 'localhost';
+$dbname   = getenv('DB_NAME') ?: 'elearning_db';
+$username = getenv('DB_USER') ?: 'root';
+$password = getenv('DB_PASS') ?: ''; // Default XAMPP MySQL root password is empty
 
 if (!defined('BASE_URL')) {
     // Derive the app root from the running script so the project works under any

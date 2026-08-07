@@ -880,3 +880,30 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 fieldset.card { min-width: 0; }
 fieldset.card > legend { display: block; float: left; width: 100%; }
 fieldset.card > legend + * { clear: both; }
+
+/* =========================================================================
+   Fixes found by running the app
+   ========================================================================= */
+
+/* The secondary button is built for the cream page; on the navy nav bar its
+   ink-on-cream colours all but vanished. */
+.navbar .btn-secondary {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+.navbar .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: #fff;
+}
+
+/* The whole subject row is one link, so the global underline landed on the
+   code and title too. Underline the row on hover instead. */
+.subject-row, .subject-row * { text-decoration: none; }
+.subject-row:hover h3 { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Short pages left the footer floating with page background below it. */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.main-content { flex: 1; }
+.admin-shell { flex: 1; }

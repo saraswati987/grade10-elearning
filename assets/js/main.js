@@ -102,12 +102,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         confirmField.addEventListener('input', () => confirmField.setCustomValidity(''));
     }
-
-    /* --- Login demo buttons --------------------------------------------- */
-    document.querySelectorAll('[data-demo]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.getElementById('email').value = btn.dataset.demo;
-            document.getElementById('password').value = 'password123';
-        });
-    });
 });
