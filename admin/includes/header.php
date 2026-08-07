@@ -1,9 +1,12 @@
 <?php
-session_start();
-require_once "./config/app.php";
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once __DIR__ . "/../../config/db.php";
+require_once __DIR__ . "/../config/app.php";
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'teacher') {
-  header("Location: /grade10-elearning/admin/login.php");
+  header("Location: " . BASE_URL . "admin/login.php");
   exit;
 }
 
@@ -18,7 +21,7 @@ $currentPath = $_SERVER['REQUEST_URI'];
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/grade10-elearning/assets/css/style.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
 </head>
 <body>
 <!--

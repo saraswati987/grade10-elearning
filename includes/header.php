@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/auth_check.php';
 $currentUser = get_current_user_data();
 ?>
@@ -14,7 +15,7 @@ $currentUser = get_current_user_data();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/grade10-elearning/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
 </head>
 <body>
 <!--
@@ -27,28 +28,28 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 -->
 <header class="navbar">
     <div class="container">
-        <a href="/grade10-elearning/index.php" class="brand-logo">
+        <a href="<?= BASE_URL ?>index.php" class="brand-logo">
             Grade 10 <span class="brand-mark">E-Learning</span>
         </a>
 
         <nav>
             <ul class="nav-menu">
-                <li><a href="/grade10-elearning/index.php" class="nav-link">Home</a></li>
+                <li><a href="<?= BASE_URL ?>index.php" class="nav-link">Home</a></li>
 
                 <?php if (is_logged_in()): ?>
                     <?php if ($currentUser['role'] === 'student'): ?>
-                        <li><a href="/grade10-elearning/student_dashboard.php" class="nav-link">My Dashboard</a></li>
+                        <li><a href="<?= BASE_URL ?>student_dashboard.php" class="nav-link">My Dashboard</a></li>
                     <?php elseif ($currentUser['role'] === 'teacher'): ?>
-                        <li><a href="/grade10-elearning/teacher_dashboard.php" class="nav-link">Teacher Dashboard</a></li>
+                        <li><a href="<?= BASE_URL ?>teacher_dashboard.php" class="nav-link">Teacher Dashboard</a></li>
                     <?php endif; ?>
 
                     <li>
                         <span class="user-badge"><strong><?= htmlspecialchars($currentUser['name']) ?></strong> (<?= ucfirst($currentUser['role']) ?>)</span>
                     </li>
-                    <li><a href="/grade10-elearning/logout.php" class="btn btn-secondary btn-sm">Logout</a></li>
+                    <li><a href="<?= BASE_URL ?>logout.php" class="btn btn-secondary btn-sm">Logout</a></li>
                 <?php else: ?>
-                    <li><a href="/grade10-elearning/login.php" class="nav-link">Login</a></li>
-                    <li><a href="/grade10-elearning/register.php" class="btn btn-primary btn-sm">Student Register</a></li>
+                    <li><a href="<?= BASE_URL ?>login.php" class="nav-link">Login</a></li>
+                    <li><a href="<?= BASE_URL ?>register.php" class="btn btn-primary btn-sm">Student Register</a></li>
                 <?php endif; ?>
             </ul>
         </nav>

@@ -8,7 +8,7 @@ $password = ''; // Default XAMPP password
 $message = '';
 $status = 'info';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['auto'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' || isset($_GET['auto'])) {
     try {
         // 1. Connect to MySQL Server
         $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $username, $password, [
