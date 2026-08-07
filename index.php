@@ -1,32 +1,24 @@
 <?php
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/auth_check.php';
 
-// Fetch all Grade 10 subjects
-try {
-    $stmt = $pdo->query("SELECT * FROM subjects ORDER BY id ASC");
-    $subjects = $stmt->fetchAll();
-} catch (PDOException $e) {
-    $subjects = [];
-}
+$subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
+
+$pageTitle = 'Home';
+require_once __DIR__ . '/includes/header.php';
 ?>
 
 <div class="intro-panel">
     <h1>Grade 10 E-Learning Portal</h1>
     <p class="lede">Chapter notes, homework, and practice quizzes for Grade 10 &mdash; SEE examination preparation, run directly by your school.</p>
 
-    <?php if (!is_logged_in()): ?>
-        <div class="page-actions">
-            <a href="/grade10-elearning/register.php" class="btn btn-primary">Join as Student</a>
-            <a href="/grade10-elearning/login.php" class="btn btn-secondary">Login to Portal</a>
-        </div>
-    <?php else: ?>
-        <div class="page-actions">
-            <a href="<?= $_SESSION['user_role'] === 'student' ? '/grade10-elearning/student_dashboard.php' : '/grade10-elearning/teacher_dashboard.php' ?>" class="btn btn-primary">
-                Go to Dashboard
-            </a>
-        </div>
-    <?php endif; ?>
+    <div class="page-actions">
+        <?php if (is_logged_in()): ?>
+            <a href="<?= portal_home() ?>" class="btn btn-primary">Go to dashboard</a>
+        <?php else: ?>
+            <a href="<?= BASE_URL ?>register.php" class="btn btn-primary">Join as student</a>
+            <a href="<?= BASE_URL ?>login.php" class="btn btn-secondary">Login to portal</a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php if (isset($_GET['error'])): ?>
@@ -37,7 +29,7 @@ try {
     <div class="alert alert-info"><?= htmlspecialchars($_GET['msg']) ?></div>
 <?php endif; ?>
 
-<h2>Grade 10 Subjects</h2>
+<h2>Grade 10 subjects</h2>
 <p class="text-muted">Select a subject to view study notes, quizzes, and assignments.</p>
 
 <?php if (empty($subjects)): ?>
@@ -46,7 +38,7 @@ try {
     <ul class="subject-list">
         <?php foreach ($subjects as $subject): ?>
             <li>
-                <a href="/grade10-elearning/subject_detail.php?id=<?= $subject['id'] ?>" class="subject-row">
+                <a href="<?= BASE_URL ?>subject_detail.php?id=<?= (int)$subject['id'] ?>" class="subject-row">
                     <div>
                         <span class="subject-code"><?= htmlspecialchars($subject['code']) ?></span>
                         <h3><?= htmlspecialchars($subject['name']) ?></h3>

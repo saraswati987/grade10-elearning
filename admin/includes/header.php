@@ -1,35 +1,44 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-require_once __DIR__ . "/../../config/db.php";
-require_once __DIR__ . "/../config/app.php";
+// admin/includes/header.php - Admin chrome (shell + sidebar + topbar).
+// Requires init.php to have run. Set $pageTitle before including.
+$pageTitle = $pageTitle ?? 'Dashboard';
+$currentScript = basename($_SERVER['SCRIPT_NAME'] ?? '');
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'teacher') {
-  header("Location: " . BASE_URL . "admin/login.php");
-  exit;
-}
-
-$currentPath = $_SERVER['REQUEST_URI'];
+$adminNav = [
+    'index.php'  => 'Dashboard',
+    'course.php' => 'Subjects',
+    'users.php'  => 'Users',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><?= htmlspecialchars($app['name']) ?></title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><?= htmlspecialchars($pageTitle) ?> | <?= htmlspecialchars($app['name']) ?></title>
+  <link rel="icon" href="<?= BASE_URL ?>admin/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
 </head>
 <body>
-<!--
-THESIS: A school-run gradebook portal should feel like the institution issuing it — steady, legible, built to be used every day rather than admired once.
-OWN-WORLD: Classic academic system: deep navy chrome, warm cream page field, a serif (Newsreader) for headings against plain Inter for every working surface — no gradients, no glass, no dashboard-startup gloss.
-STORY: The teacher/admin opens a sidebar workspace — courses, students, submissions — laid out as real data tables and forms, not a metrics-wall dashboard borrowed from a SaaS template.
-FIRST VIEWPORT: Fixed navy sidebar naming the sections; a plain topbar with the signed-in user; the page's real content (a table, a form) starts immediately in the content pane.
-FORM: Restrained navy + cream palette, Newsreader serif headings, Inter sans body/UI, 4px-based spacing scale, hairline borders over shadows-as-decoration, one authored hover/focus transition.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
--->
 <div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a href="<?= BASE_URL ?>admin/index.php" class="brand">Grade 10 <span>Admin</span></a>
+    <ul class="admin-nav">
+      <?php foreach ($adminNav as $file => $label): ?>
+        <li><a href="<?= BASE_URL ?>admin/<?= $file ?>" class="<?= $file === $currentScript ? 'active' : '' ?>"><?= $label ?></a></li>
+      <?php endforeach; ?>
+    </ul>
+    <a href="<?= BASE_URL ?>index.php" class="admin-sidebar-foot" target="_blank" rel="noopener">View student portal &rarr;</a>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <span class="admin-topbar-title"><?= htmlspecialchars($pageTitle) ?></span>
+      <div class="admin-topbar-user">
+        <span class="user-badge"><strong><?= htmlspecialchars($adminName) ?></strong> Admin</span>
+        <a href="<?= BASE_URL ?>admin/logout.php" class="btn btn-secondary btn-sm">Log out</a>
+      </div>
+    </header>

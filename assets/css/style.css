@@ -1,10 +1,9 @@
 /* =========================================================================
    Grade 10 E-Learning — Shared Stylesheet
-   Direction: classic academic. Navy + cream/warm-neutral, serif headings.
-   Type: Newsreader (headings, serif) + Inter (body/UI, sans).
-   Loaded via Google Fonts <link> in header includes (pragmatic fallback —
-   no build tooling / possible offline use, system-ui/Georgia are the
-   fallbacks below if the network request fails).
+   Direction: calm institutional. Navy + cream/warm-neutral, one typeface.
+   Type: Poppins throughout — weight and size carry the hierarchy, not a
+   second family. Loaded via a Google Fonts <link> in the header includes;
+   system-ui is the fallback if that request fails.
    ========================================================================= */
 
 :root {
@@ -41,8 +40,7 @@
   --color-info-border: #b7c6dc;
 
   /* ---- Type scale ---- */
-  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;
@@ -90,10 +88,11 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   color: var(--color-navy-900);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
   margin: 0 0 var(--space-3);
 }
 
@@ -167,7 +166,7 @@ hr { border: none; border-top: 1px solid var(--color-border); margin: var(--spac
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   font-weight: 600;
   color: #fff;
@@ -311,7 +310,7 @@ hr { border: none; border-top: 1px solid var(--color-border); margin: var(--spac
 .card + .card { margin-top: var(--space-4); }
 
 .card-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   color: var(--color-navy-900);
   margin: 0 0 var(--space-1);
@@ -603,11 +602,14 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 .stat-item .stat-value {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-3xl);
+  font-weight: 600;
   color: var(--color-navy-900);
   line-height: 1;
+  letter-spacing: -0.02em;
   display: block;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-item .stat-label {
@@ -665,7 +667,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .admin-sidebar .brand {
   display: block;
   padding: var(--space-5);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   font-weight: 600;
   color: #fff;
@@ -715,3 +717,166 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .admin-sidebar { width: 100%; }
   .admin-nav { display: flex; flex-wrap: wrap; }
 }
+
+/* =========================================================================
+   Components added with the module split (teacher portal / admin)
+   ========================================================================= */
+
+/* --- Table cell helpers --- */
+.cell-strong { font-weight: 600; color: var(--color-navy-900); }
+.cell-sub {
+  display: block;
+  font-weight: 400;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  margin-top: 2px;
+}
+
+/* Buttons and single-button forms sitting side by side in a table cell. */
+.row-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+.inline-form { display: inline; margin: 0; }
+
+.filter-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* --- Visibility --- */
+.is-hidden { display: none !important; }
+
+/* --- Shared layout helpers --- */
+.section-head { margin-top: var(--space-7); margin-bottom: var(--space-4); }
+.page-actions-center, .form-actions-center { justify-content: center; }
+.due-line { margin: var(--space-4) 0; }
+
+.highlight-card {
+  border-left: 3px solid var(--color-navy-700);
+  margin-bottom: var(--space-6);
+}
+
+.detail-list { margin: 0 0 var(--space-4); display: grid; gap: var(--space-2); }
+.detail-list > div { display: flex; gap: var(--space-3); font-size: var(--text-sm); }
+.detail-list dt {
+  min-width: 7.5rem;
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--text-xs);
+  padding-top: 1px;
+}
+.detail-list dd { margin: 0; font-weight: 500; }
+
+/* --- Quiz runner --- */
+.quiz-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-navy-900);
+  color: #d9e0ec;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-5);
+  position: sticky;
+  top: var(--space-2);
+  z-index: 5;
+}
+
+.quiz-timer {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.quiz-timer.is-urgent { color: #ffb4a8; }
+
+.question-card { border: 1px solid var(--color-border); margin-bottom: var(--space-4); }
+.question-text {
+  font-weight: 600;
+  color: var(--color-navy-900);
+  padding: 0;
+  margin-bottom: var(--space-3);
+}
+.choice-row {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  transition: background-color var(--motion-fast), border-color var(--motion-fast);
+}
+.choice-row:hover { background: var(--color-cream-100); border-color: var(--color-border); }
+.choice-row:has(input:checked) {
+  background: var(--color-navy-100);
+  border-color: var(--color-navy-700);
+}
+
+/* --- Quiz result --- */
+.result-title { font-size: var(--text-2xl); }
+.score-value {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: var(--space-4) 0 var(--space-1);
+  font-variant-numeric: tabular-nums;
+  max-width: none;
+}
+.score-value.is-pass { color: var(--color-success); }
+.score-value.is-fail { color: var(--color-danger); }
+.score-caption { font-weight: 500; color: var(--color-ink-muted); max-width: none; }
+
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-cream-200);
+  overflow: hidden;
+  margin: var(--space-4) auto var(--space-2);
+  max-width: 320px;
+}
+.progress-fill { height: 100%; border-radius: 999px; transition: width 400ms ease; }
+.progress-fill.is-pass { background: var(--color-success); }
+.progress-fill.is-fail { background: var(--color-danger); }
+
+/* --- Standalone auth page (admin sign in) --- */
+.auth-body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-cream-100);
+  padding: var(--space-6) var(--space-4);
+}
+.auth-panel { width: 100%; }
+
+/* --- Admin chrome additions --- */
+.admin-sidebar { display: flex; flex-direction: column; }
+.admin-sidebar .brand span { font-weight: 400; color: #aab6cc; }
+.admin-sidebar-foot {
+  margin-top: auto;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-xs);
+  color: #aab6cc;
+  text-decoration: none;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.admin-sidebar-foot:hover { color: #fff; }
+
+.admin-topbar-title {
+  font-weight: 600;
+  color: var(--color-navy-900);
+}
+.admin-topbar-user { display: flex; align-items: center; gap: var(--space-4); }
+
+@media (max-width: 780px) {
+  .admin-nav { display: flex; flex-wrap: wrap; }
+  .admin-sidebar-foot { display: none; }
+  .admin-content { padding: var(--space-5) var(--space-4); }
+}
+
+@media (max-width: 640px) {
+  .quiz-bar { position: static; }
+  .detail-list > div { flex-direction: column; gap: 0; }
+}
+
+/* Question blocks are real fieldsets so the options are grouped for screen
+   readers; these rules undo the browser's default fieldset chrome. */
+fieldset.card { min-width: 0; }
+fieldset.card > legend { display: block; float: left; width: 100%; }
+fieldset.card > legend + * { clear: both; }

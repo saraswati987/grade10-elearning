@@ -1,8 +1,5 @@
 <?php
-
-include "./includes/header.php";
-include "./includes/sidebar.php";
-include __DIR__ . "/../config/db.php";
+require_once __DIR__ . '/includes/init.php';
 
 $errors = [];
 $success = '';
@@ -11,19 +8,56 @@ $courseCode = '';
 $courseDescription = '';
 $editingCourse = null;
 
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
-    $deleteId = (int) $_GET['id'];
-    $deleteStmt = $pdo->prepare("DELETE FROM subjects WHERE id = ?");
-    $deleteStmt->execute([$deleteId]);
-    header('Location: course.php?success=deleted');
-    exit;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
+    $action = $_POST['action'] ?? 'create';
+
+    if ($action === 'delete') {
+        // Cascades to that subject's materials, assignments, quizzes.
+        $stmt = $pdo->prepare("DELETE FROM subjects WHERE id = ?");
+        $stmt->execute([(int)($_POST['course_id'] ?? 0)]);
+        header('Location: ' . BASE_URL . 'admin/course.php?done=deleted');
+        exit;
+    }
+
+    $courseName = trim($_POST['course_name'] ?? '');
+    $courseCode = strtoupper(trim($_POST['course_code'] ?? ''));
+    $courseDescription = trim($_POST['course_description'] ?? '');
+    $courseId = (int)($_POST['course_id'] ?? 0);
+
+    if ($courseName === '' || $courseCode === '' || $courseDescription === '') {
+        $errors[] = 'Please fill in every field.';
+    } else {
+        try {
+            if ($action === 'edit' && $courseId > 0) {
+                $stmt = $pdo->prepare("UPDATE subjects SET name = ?, code = ?, description = ? WHERE id = ?");
+                $stmt->execute([$courseName, $courseCode, $courseDescription, $courseId]);
+                header('Location: ' . BASE_URL . 'admin/course.php?done=updated');
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO subjects (name, code, description) VALUES (?, ?, ?)");
+                $stmt->execute([$courseName, $courseCode, $courseDescription]);
+                header('Location: ' . BASE_URL . 'admin/course.php?done=created');
+            }
+            exit;
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                $errors[] = 'A subject with this code already exists.';
+            } else {
+                error_log('Subject save failed: ' . $e->getMessage());
+                $errors[] = 'The subject could not be saved right now.';
+            }
+            // Keep the form in edit mode so the user does not lose their place.
+            if ($action === 'edit' && $courseId > 0) {
+                $editingCourse = ['id' => $courseId];
+            }
+        }
+    }
 }
 
-if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) {
-    $editingId = (int) $_GET['id'];
-    $editStmt = $pdo->prepare("SELECT * FROM subjects WHERE id = ?");
-    $editStmt->execute([$editingId]);
-    $editingCourse = $editStmt->fetch();
+if (isset($_GET['edit'])) {
+    $stmt = $pdo->prepare("SELECT * FROM subjects WHERE id = ?");
+    $stmt->execute([(int)$_GET['edit']]);
+    $editingCourse = $stmt->fetch() ?: null;
 
     if ($editingCourse) {
         $courseName = $editingCourse['name'];
@@ -32,136 +66,115 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? 'create';
-    $courseName = trim($_POST['course_name'] ?? '');
-    $courseCode = trim($_POST['course_code'] ?? '');
-    $courseDescription = trim($_POST['course_description'] ?? '');
-
-    if ($courseName === '' || $courseCode === '' || $courseDescription === '') {
-        $errors[] = 'Please fill in all course fields.';
-    } else {
-        try {
-            if ($action === 'edit' && !empty($_POST['course_id'])) {
-                $stmt = $pdo->prepare("UPDATE subjects SET name = ?, code = ?, description = ? WHERE id = ?");
-                $stmt->execute([$courseName, $courseCode, $courseDescription, (int) $_POST['course_id']]);
-                $success = 'Course updated successfully.';
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO subjects (name, code, description) VALUES (?, ?, ?)");
-                $stmt->execute([$courseName, $courseCode, $courseDescription]);
-                $success = 'Course created successfully.';
-            }
-
-            header('Location: course.php?success=' . ($action === 'edit' ? 'updated' : 'created'));
-            exit;
-        } catch (PDOException $e) {
-            if ($e->getCode() == 23000) {
-                $errors[] = 'A course with this code already exists.';
-            } else {
-                $errors[] = 'Unable to save the course right now.';
-            }
-        }
-    }
-}
-
-if (isset($_GET['success'])) {
-    $success = match ($_GET['success']) {
-        'created' => 'Course created successfully.',
-        'updated' => 'Course updated successfully.',
-        'deleted' => 'Course deleted successfully.',
-        default => $success,
+if (isset($_GET['done'])) {
+    $success = match ($_GET['done']) {
+        'created' => 'Subject created.',
+        'updated' => 'Subject updated.',
+        'deleted' => 'Subject deleted.',
+        default   => '',
     };
 }
 
-$coursesStmt = $pdo->query("SELECT * FROM subjects ORDER BY name ASC");
-$courses = $coursesStmt->fetchAll();
+$courses = $pdo->query("
+    SELECT s.*,
+           (SELECT COUNT(*) FROM materials WHERE subject_id = s.id) AS material_count,
+           (SELECT COUNT(*) FROM assignments WHERE subject_id = s.id) AS assignment_count
+    FROM subjects s
+    ORDER BY s.name ASC
+")->fetchAll();
+
+$pageTitle = 'Subjects';
+require_once __DIR__ . '/includes/header.php';
 ?>
 <div class="admin-content">
   <div class="page-header">
-    <h1>Courses</h1>
-    <p>Manage your school subjects and course details.</p>
+    <h1>Subjects</h1>
+    <p>The Grade 10 curriculum. Teachers attach materials, assignments and quizzes to these.</p>
   </div>
 
   <?php if ($success !== ''): ?>
-    <div class="alert alert-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
+    <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
   <?php endif; ?>
 
   <?php if (!empty($errors)): ?>
     <div class="alert alert-danger">
-      <ul class="mb-0" style="padding-left: 1.1em;">
-        <?php foreach ($errors as $error): ?>
-          <li><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></li>
-        <?php endforeach; ?>
-      </ul>
+      <?php foreach ($errors as $error): ?>
+        <p class="mb-0"><?= htmlspecialchars($error) ?></p>
+      <?php endforeach; ?>
     </div>
   <?php endif; ?>
 
   <div class="grid grid-2">
     <div class="card">
-      <h3 class="card-title"><?= $editingCourse ? 'Edit Course' : 'Add New Course' ?></h3>
-      <form method="post" action="course.php">
+      <h3 class="card-title mt-0"><?= $editingCourse ? 'Edit subject' : 'Add subject' ?></h3>
+      <form method="POST" action="<?= BASE_URL ?>admin/course.php">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="<?= $editingCourse ? 'edit' : 'create' ?>">
         <?php if ($editingCourse): ?>
-          <input type="hidden" name="course_id" value="<?= (int) $editingCourse['id'] ?>">
+          <input type="hidden" name="course_id" value="<?= (int)$editingCourse['id'] ?>">
         <?php endif; ?>
 
         <div class="form-group">
-          <label class="form-label" for="course_name">Course Name</label>
-          <input type="text" id="course_name" name="course_name" class="form-control" value="<?= htmlspecialchars($courseName, ENT_QUOTES, 'UTF-8') ?>" placeholder="Enter name of the course">
+          <label class="form-label" for="course_name">Subject name *</label>
+          <input type="text" id="course_name" name="course_name" class="form-control" value="<?= htmlspecialchars($courseName) ?>" placeholder="e.g. Mathematics" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="course_code">Course Code</label>
-          <input type="text" id="course_code" name="course_code" class="form-control" value="<?= htmlspecialchars($courseCode, ENT_QUOTES, 'UTF-8') ?>" placeholder="Enter course code">
+          <label class="form-label" for="course_code">Subject code *</label>
+          <input type="text" id="course_code" name="course_code" class="form-control" value="<?= htmlspecialchars($courseCode) ?>" placeholder="e.g. MATH10" maxlength="20" required>
+          <span class="form-hint">Must be unique across the school.</span>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="course_description">Course Description</label>
-          <textarea id="course_description" name="course_description" class="form-control" rows="6" placeholder="Enter course description"><?= htmlspecialchars($courseDescription, ENT_QUOTES, 'UTF-8') ?></textarea>
+          <label class="form-label" for="course_description">Description *</label>
+          <textarea id="course_description" name="course_description" class="form-control" rows="6" placeholder="What this subject covers" required><?= htmlspecialchars($courseDescription) ?></textarea>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary"><?= $editingCourse ? 'Update Course' : 'Create Course' ?></button>
+          <button type="submit" class="btn btn-primary"><?= $editingCourse ? 'Update subject' : 'Create subject' ?></button>
           <?php if ($editingCourse): ?>
-            <a href="course.php" class="btn btn-secondary">Cancel</a>
+            <a href="<?= BASE_URL ?>admin/course.php" class="btn btn-secondary">Cancel</a>
           <?php endif; ?>
         </div>
       </form>
     </div>
 
     <div>
-      <h3 class="card-title">Course List</h3>
+      <h3 class="card-title mt-0">Subject list</h3>
       <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Course</th>
-              <th>Code</th>
-              <th>Description</th>
-              <th class="num">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php if (empty($courses)): ?>
-              <tr><td colspan="4"><div class="empty-state"><p>No courses available yet.</p></div></td></tr>
-            <?php else: ?>
+        <?php if (empty($courses)): ?>
+          <div class="empty-state"><p>No subjects yet.</p></div>
+        <?php else: ?>
+          <table>
+            <thead>
+              <tr><th>Subject</th><th>Code</th><th class="num">Content</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
               <?php foreach ($courses as $course): ?>
                 <tr>
-                  <td style="font-weight:600;"><?= htmlspecialchars($course['name'], ENT_QUOTES, 'UTF-8') ?></td>
-                  <td class="text-muted"><?= htmlspecialchars($course['code'], ENT_QUOTES, 'UTF-8') ?></td>
-                  <td class="text-muted"><?= htmlspecialchars($course['description'], ENT_QUOTES, 'UTF-8') ?></td>
-                  <td class="num">
-                    <a href="course.php?action=edit&id=<?= (int) $course['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
-                    <a href="course.php?action=delete&id=<?= (int) $course['id'] ?>" onclick="return confirm('Delete this course?')" class="btn btn-danger btn-sm">Delete</a>
+                  <td class="cell-strong">
+                    <?= htmlspecialchars($course['name']) ?>
+                    <small class="cell-sub"><?= htmlspecialchars($course['description']) ?></small>
+                  </td>
+                  <td class="text-muted"><?= htmlspecialchars($course['code']) ?></td>
+                  <td class="num"><?= (int)$course['material_count'] + (int)$course['assignment_count'] ?></td>
+                  <td class="row-actions">
+                    <a href="<?= BASE_URL ?>admin/course.php?edit=<?= (int)$course['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                    <form method="POST" class="inline-form" data-confirm="Deleting this subject also deletes its materials, assignments, quizzes and submissions. Continue?">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="course_id" value="<?= (int)$course['id'] ?>">
+                      <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
                   </td>
                 </tr>
               <?php endforeach; ?>
-            <?php endif; ?>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        <?php endif; ?>
       </div>
     </div>
   </div>
 </div>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/includes/footer.php'; ?>

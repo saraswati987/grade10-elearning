@@ -1,40 +1,42 @@
 <?php
-session_start();
-require __DIR__ . "/../config/db.php";
+// admin/login.php - Sign in for the admin module only (role = admin).
+require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__ . '/config/app.php';
+
+if (admin_is_logged_in()) {
+    header("Location: " . BASE_URL . "admin/index.php");
+    exit;
+}
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] == "POST") {
-  $email = trim($_POST['email'] ?? '');
-  $password = trim($_POST['password'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-  if (empty($email) || empty($password)) {
+    if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
         try {
-            // Prepared Statement PDO Query for Security (Prevents SQL Injection)
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? AND role = 'admin' LIMIT 1");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password'])) {
-                if ($user['role'] === 'teacher') {
-                    // Regenerate session ID on login to prevent session fixation
-                    session_regenerate_id(true);
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_name'] = $user['name'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_role'] = $user['role'];
-                    header("Location: " . BASE_URL . "admin/index.php");
-                    exit;
-                } else {
-                    $error = 'Access denied: This portal is for Teachers/Admins only. Student accounts should sign in via the main Student Login page.';
-                }
-            } else {
-                $error = 'Invalid email address or password. Please try again.';
+                session_regenerate_id(true);
+                $_SESSION['admin_id']    = $user['id'];
+                $_SESSION['admin_name']  = $user['name'];
+                $_SESSION['admin_email'] = $user['email'];
+                header("Location: " . BASE_URL . "admin/index.php");
+                exit;
             }
+            // Same message whether the account is missing, not an admin, or the
+            // password is wrong — no account enumeration.
+            $error = 'Invalid administrator credentials.';
         } catch (PDOException $e) {
-            $error = 'Database query error: ' . $e->getMessage();
+            error_log('Admin login failed: ' . $e->getMessage());
+            $error = 'Sign in is temporarily unavailable. Please try again.';
         }
     }
 }
@@ -42,21 +44,22 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Teacher/Admin Sign In | Grade 10 E-Learning</title>
-  <link rel="icon" href="favicon.ico">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Sign In | <?= htmlspecialchars($app['name']) ?></title>
+  <link rel="icon" href="<?= BASE_URL ?>admin/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
 </head>
-<body>
-<div class="main-content container">
+<body class="auth-body">
+<main class="auth-panel">
   <div class="narrow">
     <div class="page-header text-center">
-      <h1>Teacher / Admin Sign In</h1>
-      <p>Sign in to manage the Grade 10 E-Learning system.</p>
+      <span class="card-meta">Grade 10 E-Learning</span>
+      <h1>Admin sign in</h1>
+      <p>Manage subjects and user accounts.</p>
     </div>
 
     <div class="card">
@@ -64,21 +67,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
       <?php endif; ?>
 
-      <form action="<?php echo $_SERVER['PHP_SELF'] ?>" method="POST" novalidate>
+      <form method="POST" action="<?= BASE_URL ?>admin/login.php">
+        <?= csrf_field() ?>
         <div class="form-group<?= $error ? ' has-error' : '' ?>">
           <label class="form-label" for="email">Email</label>
-          <input name="email" id="email" type="email" class="form-control" placeholder="Enter your email" required>
+          <input type="email" id="email" name="email" class="form-control" placeholder="admin@school.edu.np" required autofocus>
         </div>
 
         <div class="form-group<?= $error ? ' has-error' : '' ?>">
           <label class="form-label" for="password">Password</label>
-          <input name="password" id="password" type="password" class="form-control" placeholder="Enter password" required>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
       </form>
     </div>
+
+    <p class="text-center text-muted">
+      Students and teachers sign in <a href="<?= BASE_URL ?>login.php">on the main portal</a>.
+    </p>
   </div>
-</div>
+</main>
 </body>
 </html>

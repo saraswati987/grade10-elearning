@@ -1,178 +1,187 @@
 <?php
-require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth_check.php';
+require_once __DIR__ . '/includes/upload.php';
 require_role('teacher');
 
 $teacher_id = $_SESSION['user_id'];
 $message = '';
 $status = '';
 
-// Handle Delete Material
-if (isset($_GET['delete'])) {
-    $mat_id = (int)$_GET['delete'];
-    $stmt = $pdo->prepare("DELETE FROM materials WHERE id = ?");
-    $stmt->execute([$mat_id]);
-    $message = "Material deleted successfully.";
-    $status = "success";
-}
-
-// Handle Add Material
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $subject_id = (int)($_POST['subject_id'] ?? 0);
-    $title = trim($_POST['title'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $content_type = $_POST['content_type'] ?? 'text';
-    $external_link = trim($_POST['external_link'] ?? '');
-    $content_body = trim($_POST['content_body'] ?? '');
-    $file_path = NULL;
+    csrf_verify();
+    $action = $_POST['action'] ?? '';
 
-    if (empty($subject_id) || empty($title)) {
-        $message = "Please select a subject and enter a title.";
-        $status = "danger";
-    } else {
-        // Handle File Upload
-        if ($content_type === 'pdf' && isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
-            $uploaded = $_FILES['material_file'];
-            $allowedExt = ['pdf', 'doc', 'docx'];
-            $maxSize = 10 * 1024 * 1024; // 10 MB
-            $ext = strtolower(pathinfo($uploaded['name'], PATHINFO_EXTENSION));
+    // Destructive actions are POST + token only — a GET link could be triggered
+    // from anywhere.
+    if ($action === 'delete') {
+        $stmt = $pdo->prepare("DELETE FROM materials WHERE id = ?");
+        $stmt->execute([(int)($_POST['material_id'] ?? 0)]);
+        header("Location: " . BASE_URL . "manage_materials.php?done=deleted");
+        exit;
+    }
 
-            if (!in_array($ext, $allowedExt, true)) {
-                $message = 'Unsupported file type. Allowed: ' . implode(', ', $allowedExt) . '.';
+    if ($action === 'create') {
+        $subject_id   = (int)($_POST['subject_id'] ?? 0);
+        $title        = trim($_POST['title'] ?? '');
+        $description  = trim($_POST['description'] ?? '');
+        $content_type = in_array($_POST['content_type'] ?? '', ['text', 'pdf', 'link'], true) ? $_POST['content_type'] : 'text';
+        $external_link = trim($_POST['external_link'] ?? '');
+        $content_body  = trim($_POST['content_body'] ?? '');
+        $file_path = null;
+
+        if ($content_type === 'pdf') {
+            $file_path = save_upload($_FILES['material_file'] ?? null, ['pdf', 'doc', 'docx'], 10 * 1024 * 1024, $uploadError);
+        }
+
+        // Only the field belonging to the chosen format is stored, so a material
+        // can never claim to be a PDF while holding a stale link.
+        $external_link = $content_type === 'link' ? $external_link : null;
+        $content_body  = $content_type === 'text' ? $content_body : null;
+
+        if ($subject_id <= 0 || $title === '') {
+            $message = 'Please select a subject and enter a title.';
+            $status = 'danger';
+        } elseif (!empty($uploadError)) {
+            $message = $uploadError;
+            $status = 'danger';
+        } elseif ($content_type === 'pdf' && !$file_path) {
+            $message = 'Choose a PDF or Word file to upload for this format.';
+            $status = 'danger';
+        } elseif ($content_type === 'link' && !filter_var($external_link, FILTER_VALIDATE_URL)) {
+            $message = 'Enter a valid resource URL (including https://).';
+            $status = 'danger';
+        } elseif ($content_type === 'text' && $content_body === '') {
+            $message = 'Write the notes body for a written material.';
+            $status = 'danger';
+        } else {
+            try {
+                $stmt = $pdo->prepare("
+                    INSERT INTO materials (subject_id, title, description, content_type, file_path, external_link, content_body, uploaded_by)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([$subject_id, $title, $description, $content_type, $file_path, $external_link, $content_body, $teacher_id]);
+                header("Location: " . BASE_URL . "manage_materials.php?done=created");
+                exit;
+            } catch (PDOException $e) {
+                delete_upload($file_path);
+                error_log('Material insert failed: ' . $e->getMessage());
+                $message = 'The material could not be saved. Please try again.';
                 $status = 'danger';
-            } elseif ($uploaded['size'] > $maxSize) {
-                $message = 'File is too large. Maximum size is 10MB.';
-                $status = 'danger';
-            } else {
-                $uploadDir = __DIR__ . '/uploads/';
-                if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-
-                // Generate a random filename to avoid path traversal / collisions / trusting user input
-                $fileName = bin2hex(random_bytes(16)) . '.' . $ext;
-                if (move_uploaded_file($uploaded['tmp_name'], $uploadDir . $fileName)) {
-                    $file_path = 'uploads/' . $fileName;
-                } else {
-                    $message = 'Failed to upload the file.';
-                    $status = 'danger';
-                }
             }
         }
 
-        if ($status !== 'danger') try {
-            $stmt = $pdo->prepare("
-                INSERT INTO materials (subject_id, title, description, content_type, file_path, external_link, content_body, uploaded_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([$subject_id, $title, $description, $content_type, $file_path, $external_link, $content_body, $teacher_id]);
-            $message = "Study material published successfully!";
-            $status = "success";
-        } catch (PDOException $e) {
-            $message = "Error: " . $e->getMessage();
-            $status = "danger";
+        if ($status === 'danger') {
+            delete_upload($file_path);
         }
     }
 }
 
-// Fetch All Subjects
-$subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
+if (isset($_GET['done'])) {
+    $status = 'success';
+    $message = $_GET['done'] === 'deleted' ? 'Material deleted.' : 'Study material published.';
+}
 
-// Fetch Existing Materials
-$stmt = $pdo->query("
-    SELECT m.*, s.name as subject_name
+$subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
+$materials = $pdo->query("
+    SELECT m.*, s.name AS subject_name
     FROM materials m
     JOIN subjects s ON m.subject_id = s.id
     ORDER BY m.id DESC
-");
-$materials = $stmt->fetchAll();
+")->fetchAll();
 
+$pageTitle = 'Manage Materials';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
 <div class="page-header">
-    <h1>Manage Study Materials</h1>
+    <h1>Study materials</h1>
     <p>Publish chapter guides, PDF notes, and learning resources for Grade 10 students.</p>
 </div>
 
 <?php if ($message): ?>
-    <div class="alert alert-<?= $status ?>"><?= htmlspecialchars($message) ?></div>
+    <div class="alert alert-<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($message) ?></div>
 <?php endif; ?>
 
 <div class="grid grid-2">
     <div class="card">
-        <h3 class="card-title">Add New Study Material</h3>
+        <h3 class="card-title mt-0">Add new material</h3>
 
         <form method="POST" enctype="multipart/form-data">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="create">
+
             <div class="form-group">
-                <label class="form-label" for="subject_id">Grade 10 Subject *</label>
+                <label class="form-label" for="subject_id">Subject *</label>
                 <select id="subject_id" name="subject_id" class="form-control" required>
-                    <option value="">-- Select Subject --</option>
+                    <option value="">Select a subject</option>
                     <?php foreach ($subjects as $s): ?>
-                        <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['name']) ?> (<?= htmlspecialchars($s['code']) ?>)</option>
+                        <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars($s['name']) ?> (<?= htmlspecialchars($s['code']) ?>)</option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="title">Material Title *</label>
-                <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Chapter 3: Force & Friction Notes" required>
+                <label class="form-label" for="title">Title *</label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Chapter 3: Force &amp; Friction notes" required>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="description">Short Overview / Description</label>
-                <input type="text" id="description" name="description" class="form-control" placeholder="Summary of key concepts covered...">
+                <label class="form-label" for="description">Short description</label>
+                <input type="text" id="description" name="description" class="form-control" placeholder="Summary of the key concepts covered">
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="content_type">Format Type</label>
-                <select id="content_type" name="content_type" class="form-control" onchange="toggleFormatFields(this.value)">
-                    <option value="text">Written Text / Formula Sheet</option>
-                    <option value="pdf">PDF File Download</option>
-                    <option value="link">External Web Link / Video Tutorial</option>
+                <label class="form-label" for="content_type">Format</label>
+                <select id="content_type" name="content_type" class="form-control" data-toggle-format>
+                    <option value="text">Written notes</option>
+                    <option value="pdf">PDF / Word download</option>
+                    <option value="link">External link or video</option>
                 </select>
             </div>
 
-            <div class="form-group" id="group-text">
-                <label class="form-label" for="content_body">Written Notes Body</label>
-                <textarea id="content_body" name="content_body" class="form-control" placeholder="Type key formulas, definitions, or bullet points here..."></textarea>
+            <div class="form-group" data-format="text">
+                <label class="form-label" for="content_body">Notes body</label>
+                <textarea id="content_body" name="content_body" rows="6" class="form-control" placeholder="Key formulas, definitions, or bullet points..."></textarea>
             </div>
 
-            <div class="form-group" id="group-pdf" style="display: none;">
-                <label class="form-label" for="material_file">Upload PDF Document</label>
+            <div class="form-group is-hidden" data-format="pdf">
+                <label class="form-label" for="material_file">Document</label>
                 <input type="file" id="material_file" name="material_file" class="form-control" accept=".pdf,.doc,.docx">
+                <span class="form-hint">PDF or Word, up to 10MB.</span>
             </div>
 
-            <div class="form-group" id="group-link" style="display: none;">
-                <label class="form-label" for="external_link">Web Resource URL / YouTube Link</label>
+            <div class="form-group is-hidden" data-format="link">
+                <label class="form-label" for="external_link">Resource URL</label>
                 <input type="url" id="external_link" name="external_link" class="form-control" placeholder="https://youtube.com/...">
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block">Publish Material</button>
+            <button type="submit" class="btn btn-primary btn-block">Publish material</button>
         </form>
     </div>
 
     <div>
-        <h3 class="card-title">Published Notes List</h3>
+        <h3 class="card-title mt-0">Published materials</h3>
         <div class="table-container">
             <?php if (empty($materials)): ?>
                 <div class="empty-state"><p>No study materials published yet.</p></div>
             <?php else: ?>
                 <table>
                     <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Subject</th>
-                            <th>Type</th>
-                            <th>Action</th>
-                        </tr>
+                        <tr><th>Title</th><th>Subject</th><th>Type</th><th>Action</th></tr>
                     </thead>
                     <tbody>
                         <?php foreach ($materials as $m): ?>
                             <tr>
-                                <td style="font-weight: 600;"><?= htmlspecialchars($m['title']) ?></td>
+                                <td class="cell-strong"><?= htmlspecialchars($m['title']) ?></td>
                                 <td class="text-muted"><?= htmlspecialchars($m['subject_name']) ?></td>
                                 <td><span class="badge badge-<?= htmlspecialchars($m['content_type']) ?>"><?= strtoupper(htmlspecialchars($m['content_type'])) ?></span></td>
                                 <td>
-                                    <a href="manage_materials.php?delete=<?= $m['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this material?');">Delete</a>
+                                    <form method="POST" class="inline-form" data-confirm="Delete this material?">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="material_id" value="<?= (int)$m['id'] ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -182,13 +191,5 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     </div>
 </div>
-
-<script>
-function toggleFormatFields(type) {
-    document.getElementById('group-text').style.display = (type === 'text') ? 'block' : 'none';
-    document.getElementById('group-pdf').style.display = (type === 'pdf') ? 'block' : 'none';
-    document.getElementById('group-link').style.display = (type === 'link') ? 'block' : 'none';
-}
-</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

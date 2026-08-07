@@ -1,65 +1,57 @@
 <?php
-// login.php - Grade 10 E-Learning PHP Authentication Portal (TU BCA Standard)
-require_once __DIR__ . '/config/db.php';
+// login.php - Student & teacher sign in for the main portal.
 require_once __DIR__ . '/includes/auth_check.php';
 
-// Redirect if already logged in
 if (is_logged_in()) {
-    header("Location: " . ($_SESSION['user_role'] === 'teacher' ? 'teacher_dashboard.php' : 'student_dashboard.php'));
+    header("Location: " . portal_home());
     exit;
 }
 
-
-
 $error = '';
 $msg = $_GET['msg'] ?? '';
-$dbReady = true;
 
-// Check if database tables exist
+// Has the schema been imported yet?
+$dbReady = true;
 try {
-    $checkStmt = $pdo->query("SELECT 1 FROM users LIMIT 1");
-} catch (Exception $e) {
+    $pdo->query("SELECT 1 FROM users LIMIT 1");
+} catch (PDOException $e) {
     $dbReady = false;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
     $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-    $selected_role = trim($_POST['role'] ?? 'student');
+    $password = $_POST['password'] ?? '';
 
-    if (empty($email) || empty($password)) {
+    if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
         try {
-            // Prepared Statement PDO Query for Security (Prevents SQL Injection)
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password'])) {
-                // Regenerate session ID on login to prevent session fixation
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_name'] = $user['name'];
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_role'] = $user['role'];
-
-                // Role-based Redirection
-                if ($user['role'] === 'teacher') {
-                    header("Location: teacher_dashboard.php");
-                } else {
-                    header("Location: student_dashboard.php");
-                }
-                exit;
-            } else {
+            if (!$user || !password_verify($password, $user['password'])) {
                 $error = 'Invalid email address or password. Please try again.';
+            } elseif ($user['role'] === 'admin') {
+                $error = 'Administrator accounts sign in through the admin panel, not this page.';
+            } else {
+                session_regenerate_id(true);
+                $_SESSION['user_id']    = $user['id'];
+                $_SESSION['user_name']  = $user['name'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_role']  = $user['role'];
+                header("Location: " . portal_home());
+                exit;
             }
         } catch (PDOException $e) {
-            $error = 'Database query error: ' . $e->getMessage();
+            error_log('Login query failed: ' . $e->getMessage());
+            $error = 'Sign in is temporarily unavailable. Please try again.';
         }
     }
 }
 
+$pageTitle = 'Login';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -72,10 +64,10 @@ require_once __DIR__ . '/includes/header.php';
     <div class="card">
         <?php if (!$dbReady): ?>
             <div class="alert alert-warning">
-                <strong>Database not initialized yet.</strong>
-                <p class="mt-0 mb-0">Run the one-time setup to create tables and demo accounts.</p>
+                <strong>Database not initialised yet.</strong>
+                <p class="mb-0">Run the one-time setup to create the tables and demo accounts.</p>
                 <div class="form-actions">
-                    <a href="setup_database.php?auto=1" class="btn btn-secondary btn-sm">Run Database Setup</a>
+                    <a href="<?= BASE_URL ?>setup_database.php" class="btn btn-secondary btn-sm">Run database setup</a>
                 </div>
             </div>
         <?php endif; ?>
@@ -88,16 +80,16 @@ require_once __DIR__ . '/includes/header.php';
             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="login.php" novalidate>
+        <form method="POST" action="<?= BASE_URL ?>login.php">
+            <?= csrf_field() ?>
             <div class="form-group<?= $error ? ' has-error' : '' ?>">
-                <label class="form-label" for="email">Email Address</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="student@school.edu.np" required>
+                <label class="form-label" for="email">Email address</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="student@school.edu.np" required autofocus>
             </div>
 
             <div class="form-group<?= $error ? ' has-error' : '' ?>">
                 <label class="form-label" for="password">Password</label>
                 <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
-                <?php if ($error): ?><span class="field-error"><?= htmlspecialchars($error) ?></span><?php endif; ?>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block">Login</button>
@@ -106,24 +98,19 @@ require_once __DIR__ . '/includes/header.php';
         <hr>
 
         <div class="text-center">
-            <p class="text-muted" style="font-size: var(--text-xs);">Demo credentials (password: <code>password123</code>)</p>
-            <div class="page-actions" style="justify-content: center;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('student@school.edu.np')">Student Demo</button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('teacher@school.edu.np')">Teacher Demo</button>
+            <p class="form-hint">Demo accounts &mdash; password <code>password123</code></p>
+            <div class="page-actions page-actions-center">
+                <button type="button" class="btn btn-secondary btn-sm" data-demo="student@school.edu.np">Student demo</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-demo="teacher@school.edu.np">Teacher demo</button>
             </div>
         </div>
     </div>
 
-    <p class="text-center" style="margin-top: var(--space-4);">
-        <a href="register.php">Don't have an account? Register here</a>
+    <p class="text-center text-muted">
+        <a href="<?= BASE_URL ?>register.php">Don't have an account? Register here</a>
+        &middot;
+        <a href="<?= BASE_URL ?>admin/login.php">Admin panel</a>
     </p>
 </div>
-
-<script>
-function fillDemo(email) {
-    document.getElementById('email').value = email;
-    document.getElementById('password').value = 'password123';
-}
-</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

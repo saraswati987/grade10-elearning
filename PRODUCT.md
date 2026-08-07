@@ -20,12 +20,13 @@ Used during and outside class time on school or home computers. Teachers upload 
 
 ## Capabilities and Constraints
 - Confirmed: student/teacher/admin roles with session-based auth; subjects with materials, assignments (file upload), and quizzes (auto-scored).
+- Confirmed: teacher and admin are separate modules with separate logins and separate session namespaces — the portal (/) serves students and teachers, /admin serves administrators only (curriculum + accounts). See DESIGN.md.
 - Constraint: PHP + MySQL, server-rendered pages, no JS framework.
 - Constraint: no live PHP environment available for testing during development — changes are implemented statically and must be visually/structurally correct without a run step.
 - Undecided: whether additional grades/subjects beyond the current set are ever added (out of scope unless requested).
 
 ## Brand Commitments
-Keep the existing name "Grade 10 E-Learning" as the site wordmark (user confirmed, no rename). Visual direction confirmed for this redesign: classic academic palette (navy + cream/warm neutral, serif headings), avoiding dark-mode/glassmorphism/SaaS-startup aesthetics.
+Keep the existing name "Grade 10 E-Learning" as the site wordmark (user confirmed, no rename). Visual direction confirmed for this redesign: classic academic palette (navy + cream/warm neutral), avoiding dark-mode/glassmorphism/SaaS-startup aesthetics. Typography is Poppins throughout — a single sans-serif family, weight and size carrying the hierarchy (user directive, supersedes the earlier serif-heading choice).
 
 ## Evidence on Hand
 Existing PHP codebase at project root with functional dashboards, auth, quiz, assignment, and materials flows (see recent code audit/fix pass). No logo or brand assets on hand beyond the text wordmark.

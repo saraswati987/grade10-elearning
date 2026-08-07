@@ -1,64 +1,113 @@
 /**
- * Grade 10 E-Learning Management System JavaScript
- * Handles tabs, form validation & quiz interactive runner
+ * Grade 10 E-Learning — progressive enhancement only.
+ * Every feature below has a working server-side equivalent; nothing here is
+ * load-bearing for correctness.
  */
-
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Tab Switching Handler
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(btn => {
+
+    /* --- Tabs (subject detail) ----------------------------------------- */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
-            
-            // Remove active class from all buttons and panes
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-
-            // Set active class
             btn.classList.add('active');
-            const targetPane = document.getElementById(target);
-            if (targetPane) targetPane.classList.add('active');
+            const pane = document.getElementById(target);
+            if (pane) pane.classList.add('active');
         });
     });
 
-    // 2. Interactive Timed Quiz Handler
+    /* --- Conditional form fields --------------------------------------- */
+    // <select data-toggle-format> shows the [data-format="<value>"] block in
+    // the same form and hides the others.
+    document.querySelectorAll('[data-toggle-format]').forEach(select => {
+        const apply = () => {
+            select.form.querySelectorAll('[data-format]').forEach(group => {
+                group.classList.toggle('is-hidden', group.dataset.format !== select.value);
+            });
+        };
+        select.addEventListener('change', apply);
+        apply();
+    });
+
+    /* --- Destructive actions ------------------------------------------- */
+    document.querySelectorAll('form[data-confirm]').forEach(form => {
+        form.addEventListener('submit', e => {
+            if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+        });
+    });
+
+    // Fills a hidden input from a prompt before submitting (password resets).
+    document.querySelectorAll('form[data-prompt]').forEach(form => {
+        form.addEventListener('submit', e => {
+            const field = form.elements[form.dataset.prompt];
+            if (field && field.value) return; // already filled
+            const value = window.prompt(form.dataset.promptLabel || 'Enter a value');
+            if (!value) {
+                e.preventDefault();
+                return;
+            }
+            field.value = value;
+        });
+    });
+
+    /* --- Quiz countdown ------------------------------------------------- */
+    // The server holds the real deadline (see take_quiz.php); this is the
+    // visible clock and the courtesy auto-submit.
     const quizForm = document.getElementById('quizForm');
-    const timerDisplay = document.getElementById('timerDisplay');
-    
-    if (quizForm && timerDisplay) {
-        let durationMins = parseInt(timerDisplay.getAttribute('data-duration')) || 10;
-        let totalSeconds = durationMins * 60;
+    const timer = document.getElementById('timerDisplay');
 
-        const countdownInterval = setInterval(() => {
-            totalSeconds--;
-            let mins = Math.floor(totalSeconds / 60);
-            let secs = totalSeconds % 60;
+    if (quizForm && timer) {
+        let remaining = parseInt(timer.dataset.remaining, 10);
+        if (!Number.isFinite(remaining)) remaining = 0;
+        let submitted = false;
 
-            timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const render = () => {
+            const safe = Math.max(0, remaining);
+            const mins = String(Math.floor(safe / 60)).padStart(2, '0');
+            const secs = String(safe % 60).padStart(2, '0');
+            timer.textContent = `${mins}:${secs}`;
+            timer.classList.toggle('is-urgent', safe <= 60);
+        };
 
-            if (totalSeconds <= 0) {
-                clearInterval(countdownInterval);
-                alert("Time is up! Your quiz will now be submitted automatically.");
-                quizForm.submit();
+        render();
+        const tick = setInterval(() => {
+            remaining--;
+            render();
+            if (remaining <= 0) {
+                clearInterval(tick);
+                if (!submitted) {
+                    submitted = true;
+                    quizForm.submit();
+                }
             }
         }, 1000);
 
         quizForm.addEventListener('submit', () => {
-            clearInterval(countdownInterval);
+            submitted = true;
+            clearInterval(tick);
         });
     }
 
-    // 3. Password Confirmation Validation
+    /* --- Registration: confirm password --------------------------------- */
     const regForm = document.getElementById('registerForm');
     if (regForm) {
-        regForm.addEventListener('submit', (e) => {
-            const pass = document.getElementById('password').value;
-            const confirmPass = document.getElementById('confirm_password').value;
-
-            if (pass !== confirmPass) {
+        const confirmField = regForm.elements.confirm_password;
+        regForm.addEventListener('submit', e => {
+            if (regForm.elements.password.value !== confirmField.value) {
                 e.preventDefault();
-                alert("Passwords do not match! Please check and try again.");
+                confirmField.setCustomValidity('Passwords do not match.');
+                confirmField.reportValidity();
             }
         });
+        confirmField.addEventListener('input', () => confirmField.setCustomValidity(''));
     }
+
+    /* --- Login demo buttons --------------------------------------------- */
+    document.querySelectorAll('[data-demo]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('email').value = btn.dataset.demo;
+            document.getElementById('password').value = 'password123';
+        });
+    });
 });

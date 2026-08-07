@@ -1,5 +1,5 @@
 <?php
 
 $app = [
-    'name' => "LMS - Student Learning Management System"
+    'name' => 'Grade 10 E-Learning Admin',
 ];
