@@ -17,15 +17,19 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password']) && $user['role'] === 'teacher') {
-                // Regenerate session ID on login to prevent session fixation
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_name'] = $user['name'];
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_role'] = $user['role'];
-                header("Location: " . BASE_URL . "admin/index.php");
-                exit;
+            if ($user && password_verify($password, $user['password'])) {
+                if ($user['role'] === 'teacher') {
+                    // Regenerate session ID on login to prevent session fixation
+                    session_regenerate_id(true);
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_name'] = $user['name'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_role'] = $user['role'];
+                    header("Location: " . BASE_URL . "admin/index.php");
+                    exit;
+                } else {
+                    $error = 'Access denied: This portal is for Teachers/Admins only. Student accounts should sign in via the main Student Login page.';
+                }
             } else {
                 $error = 'Invalid email address or password. Please try again.';
             }
