@@ -10,7 +10,7 @@ $stmt->execute([$subject_id]);
 $subject = $stmt->fetch();
 
 if (!$subject) {
-    echo "<div class='alert alert-danger'>Subject not found! <a href='index.php'>Return home</a></div>";
+    echo "<div class='alert alert-danger'>Subject not found. <a href='index.php'>Return home</a></div>";
     require_once __DIR__ . '/includes/footer.php';
     exit;
 }
@@ -22,78 +22,62 @@ $materials = $stmt->fetchAll();
 
 
 
+// 2. Fetch Quizzes
+$stmt = $pdo->prepare("
+    SELECT q.*, COUNT(qq.id) AS question_count
+    FROM quizzes q
+    LEFT JOIN quiz_questions qq ON qq.quiz_id = q.id
+    WHERE q.subject_id = ?
+    GROUP BY q.id
+    ORDER BY q.id DESC
+");
+$stmt->execute([$subject_id]);
+$quizzes = $stmt->fetchAll();
+
 // 3. Fetch Assignments
 $stmt = $pdo->prepare("SELECT * FROM assignments WHERE subject_id = ? ORDER BY due_date ASC");
 $stmt->execute([$subject_id]);
 $assignments = $stmt->fetchAll();
 ?>
 
-<!-- Subject Header -->
-<div class="hero-section" style="padding: 35px; margin-bottom: 30px;">
-    <div>
-        <span style="font-size: 0.85rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">
-            Subject Code: <?= htmlspecialchars($subject['code']) ?>
-        </span>
-        <h1 style="font-size: 2.2rem; color: white; margin-top: 5px;">
-            <i class="fa-solid <?= htmlspecialchars($subject['icon']) ?>" style="color: #3b82f6; margin-right: 10px;"></i>
-            <?= htmlspecialchars($subject['name']) ?>
-        </h1>
-        <p style="color: #94a3b8; font-size: 1.05rem; margin-top: 8px;">
-            <?= htmlspecialchars($subject['description']) ?>
-        </p>
-    </div>
+<div class="page-header">
+    <span class="card-meta">Subject Code: <?= htmlspecialchars($subject['code']) ?></span>
+    <h1><?= htmlspecialchars($subject['name']) ?></h1>
+    <p><?= htmlspecialchars($subject['description']) ?></p>
 </div>
 
-<!-- Tabs Navigation -->
 <div class="tabs-header">
-    <button class="tab-btn active" data-target="tab-notes">
-        <i class="fa-solid fa-file-lines"></i> Study Notes & Materials (<?= count($materials) ?>)
-    </button>
-   
-    <button class="tab-btn" data-target="tab-assignments">
-        <i class="fa-solid fa-pen-to-square"></i> Homework & Assignments (<?= count($assignments) ?>)
-    </button>
+    <button class="tab-btn active" data-target="tab-notes">Study Notes &amp; Materials (<?= count($materials) ?>)</button>
+    <button class="tab-btn" data-target="tab-quizzes">Practice Quizzes (<?= count($quizzes) ?>)</button>
+    <button class="tab-btn" data-target="tab-assignments">Homework &amp; Assignments (<?= count($assignments) ?>)</button>
 </div>
 
 <!-- Tab 1: Study Notes & Materials -->
 <div id="tab-notes" class="tab-pane active">
     <?php if (empty($materials)): ?>
-        <div class="card" style="text-align: center; color: #94a3b8; padding: 40px;">
-            <i class="fa-solid fa-folder-open" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-            <p>No study notes or materials uploaded for this subject yet.</p>
-        </div>
+        <div class="empty-state"><p>No study notes or materials uploaded for this subject yet.</p></div>
     <?php else: ?>
-        <div class="grid-2">
+        <div class="grid grid-2">
             <?php foreach ($materials as $mat): ?>
                 <div class="card">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                            <h3 style="color: white; font-size: 1.2rem;"><?= htmlspecialchars($mat['title']) ?></h3>
-                            <span class="badge badge-<?= htmlspecialchars($mat['content_type']) ?>">
-                                <?= strtoupper(htmlspecialchars($mat['content_type'])) ?>
-                            </span>
-                        </div>
-                        
-                        <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 15px;"><?= htmlspecialchars($mat['description']) ?></p>
-
-                        <?php if ($mat['content_body']): ?>
-                            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-bottom: 15px; white-space: pre-wrap; font-family: inherit; font-size: 0.9rem; color: #cbd5e1; max-height: 180px; overflow-y: auto;">
-                                <?= htmlspecialchars($mat['content_body']) ?>
-                            </div>
-                        <?php endif; ?>
+                    <div class="flex-between">
+                        <h3 class="card-title mb-0"><?= htmlspecialchars($mat['title']) ?></h3>
+                        <span class="badge badge-<?= htmlspecialchars($mat['content_type']) ?>"><?= strtoupper(htmlspecialchars($mat['content_type'])) ?></span>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #334155;">
-                        <small style="color: #64748b;"><i class="fa-regular fa-clock"></i> <?= date('M d, Y', strtotime($mat['created_at'])) ?></small>
-                        
+                    <p class="card-desc"><?= htmlspecialchars($mat['description']) ?></p>
+
+                    <?php if ($mat['content_body']): ?>
+                        <div class="content-body"><?= htmlspecialchars($mat['content_body']) ?></div>
+                    <?php endif; ?>
+
+                    <div class="card-footer">
+                        <small>Added <?= date('M d, Y', strtotime($mat['created_at'])) ?></small>
+
                         <?php if ($mat['file_path']): ?>
-                            <a href="<?= htmlspecialchars($mat['file_path']) ?>" download class="btn btn-primary btn-sm">
-                                <i class="fa-solid fa-download"></i> Download Note File
-                            </a>
+                            <a href="<?= htmlspecialchars($mat['file_path']) ?>" download class="btn btn-primary btn-sm">Download File</a>
                         <?php elseif ($mat['external_link']): ?>
-                            <a href="<?= htmlspecialchars($mat['external_link']) ?>" target="_blank" class="btn btn-secondary btn-sm">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Resource Link
-                            </a>
+                            <a href="<?= htmlspecialchars($mat['external_link']) ?>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Open Resource Link</a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -102,15 +86,32 @@ $assignments = $stmt->fetchAll();
     <?php endif; ?>
 </div>
 
-
+<!-- Tab: Quizzes -->
+<div id="tab-quizzes" class="tab-pane">
+    <?php if (empty($quizzes)): ?>
+        <div class="empty-state"><p>No practice quizzes available for this subject yet.</p></div>
+    <?php else: ?>
+        <div class="grid grid-2">
+            <?php foreach ($quizzes as $quiz): ?>
+                <div class="card">
+                    <h3 class="card-title"><?= htmlspecialchars($quiz['title']) ?></h3>
+                    <p class="card-desc"><?= htmlspecialchars($quiz['description']) ?></p>
+                    <p class="text-muted" style="font-size: var(--text-sm);"><?= (int)$quiz['duration_mins'] ?> mins &middot; <?= (int)$quiz['question_count'] ?> questions</p>
+                    <?php if (is_logged_in() && $_SESSION['user_role'] === 'student'): ?>
+                        <a href="take_quiz.php?id=<?= $quiz['id'] ?>" class="btn btn-primary btn-block">Start Quiz</a>
+                    <?php else: ?>
+                        <a href="login.php" class="btn btn-secondary btn-block">Login to Take Quiz</a>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
 
 <!-- Tab 2: Assignments -->
 <div id="tab-assignments" class="tab-pane">
     <?php if (empty($assignments)): ?>
-        <div class="card" style="text-align: center; color: #94a3b8; padding: 40px;">
-            <i class="fa-solid fa-clipboard-list" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-            <p>No active homework assignments for this subject.</p>
-        </div>
+        <div class="empty-state"><p>No active homework assignments for this subject.</p></div>
     <?php else: ?>
         <div class="table-container">
             <table>
@@ -125,16 +126,12 @@ $assignments = $stmt->fetchAll();
                 <tbody>
                     <?php foreach ($assignments as $asn): ?>
                         <tr>
-                            <td style="font-weight: 600; width: 25%;"><?= htmlspecialchars($asn['title']) ?></td>
-                            <td style="color: #cbd5e1; font-size: 0.9rem; width: 45%;"><?= htmlspecialchars($asn['description']) ?></td>
-                            <td style="color: #f59e0b; font-weight: 600; font-size: 0.9rem;">
-                                <i class="fa-regular fa-calendar"></i> <?= date('M d, Y', strtotime($asn['due_date'])) ?>
-                            </td>
+                            <td style="font-weight: 600;"><?= htmlspecialchars($asn['title']) ?></td>
+                            <td class="text-muted"><?= htmlspecialchars($asn['description']) ?></td>
+                            <td><?= date('M d, Y', strtotime($asn['due_date'])) ?></td>
                             <td>
                                 <?php if (is_logged_in() && $_SESSION['user_role'] === 'student'): ?>
-                                    <a href="submit_assignment.php?id=<?= $asn['id'] ?>" class="btn btn-primary btn-sm">
-                                        <i class="fa-solid fa-upload"></i> Submit Homework
-                                    </a>
+                                    <a href="submit_assignment.php?id=<?= $asn['id'] ?>" class="btn btn-primary btn-sm">Submit Homework</a>
                                 <?php else: ?>
                                     <a href="login.php" class="btn btn-secondary btn-sm">Login to Submit</a>
                                 <?php endif; ?>

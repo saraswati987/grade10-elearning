@@ -26,113 +26,86 @@ $assignments = $stmt->fetchAll();
 $stmtCountM = $pdo->query("SELECT COUNT(*) FROM materials");
 $totalMaterials = $stmtCountM->fetchColumn();
 
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM quiz_attempts WHERE student_id = ?");
+$stmt->execute([$student_id]);
+$quizAttemptsCount = $stmt->fetchColumn();
+
 
 
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div style="margin-bottom: 30px;">
-    <h1 style="color: white; font-size: 2rem;"><i class="fa-solid fa-graduation-cap" style="color: #3b82f6;"></i> Student Learning Portal</h1>
-    <p style="color: #94a3b8;">Welcome back, <?= htmlspecialchars($_SESSION['user_name']) ?>! Track your Grade 10 SEE preparation progress.</p>
+<div class="page-header">
+    <h1>Student Learning Portal</h1>
+    <p>Welcome back, <?= htmlspecialchars($_SESSION['user_name']) ?>. Track your Grade 10 SEE preparation progress.</p>
 </div>
 
-<!-- Stats Counter Grid -->
-<div class="grid-3" style="margin-bottom: 40px;">
-    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;">
-        <div style="width: 50px; height: 50px; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-            <i class="fa-solid fa-book"></i>
-        </div>
-        <div>
-            <h3 style="font-size: 1.8rem; color: white;"><?= count($subjects) ?></h3>
-            <span style="color: #94a3b8; font-size: 0.9rem;">Enrolled Subjects</span>
-        </div>
+<div class="stat-row">
+    <div class="stat-item">
+        <span class="stat-value"><?= count($subjects) ?></span>
+        <span class="stat-label">Enrolled Subjects</span>
     </div>
-
-    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;">
-        <div style="width: 50px; height: 50px; background: rgba(16, 185, 129, 0.2); color: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-            <i class="fa-solid fa-file-pdf"></i>
-        </div>
-        <div>
-            <h3 style="font-size: 1.8rem; color: white;"><?= $totalMaterials ?></h3>
-            <span style="color: #94a3b8; font-size: 0.9rem;">Study Materials Available</span>
-        </div>
+    <div class="stat-item">
+        <span class="stat-value"><?= $totalMaterials ?></span>
+        <span class="stat-label">Study Materials Available</span>
     </div>
-
-    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;">
-        <div style="width: 50px; height: 50px; background: rgba(139, 92, 246, 0.2); color: #8b5cf6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-            <i class="fa-solid fa-award"></i>
-        </div>
-       
+    <div class="stat-item">
+        <span class="stat-value"><?= $quizAttemptsCount ?></span>
+        <span class="stat-label">Quizzes Attempted</span>
     </div>
 </div>
 
-<!-- Grade 10 Subject Quick Selection -->
-<div style="margin-bottom: 30px;">
-    <h2 style="font-size: 1.4rem; color: white; margin-bottom: 15px;"><i class="fa-solid fa-layer-group"></i> Grade 10 Subjects</h2>
-    <div class="grid-3">
+<h2>Grade 10 Subjects</h2>
+<?php if (empty($subjects)): ?>
+    <div class="empty-state"><p>No subjects have been added yet.</p></div>
+<?php else: ?>
+    <ul class="subject-list">
         <?php foreach ($subjects as $sub): ?>
-            <div class="card" style="padding: 20px;">
-                <div class="card-header" style="margin-bottom: 10px;">
-                    <div class="card-icon" style="width: 40px; height: 40px; font-size: 1.1rem;">
-                        <i class="fa-solid <?= htmlspecialchars($sub['icon']) ?>"></i>
-                    </div>
+            <li>
+                <a href="/grade10-elearning/subject_detail.php?id=<?= $sub['id'] ?>" class="subject-row">
                     <div>
-                        <h4 style="color: white; font-size: 1.1rem;"><?= htmlspecialchars($sub['name']) ?></h4>
-                        <span style="font-size: 0.75rem; color: #94a3b8;"><?= htmlspecialchars($sub['code']) ?></span>
+                        <span class="subject-code"><?= htmlspecialchars($sub['code']) ?></span>
+                        <h3><?= htmlspecialchars($sub['name']) ?></h3>
                     </div>
-                </div>
-                <a href="/grade10-elearning/subject_detail.php?id=<?= $sub['id'] ?>" class="btn btn-primary btn-sm" style="margin-top: 10px; width: 100%;">
-                    Open Subject Hub <i class="fa-solid fa-chevron-right"></i>
+                    <span class="btn btn-secondary btn-sm">Open &rarr;</span>
                 </a>
-            </div>
+            </li>
         <?php endforeach; ?>
-    </div>
-</div>
+    </ul>
+<?php endif; ?>
 
-
-
-    <!-- Active Assignments -->
-    <div>
-        <h2 style="font-size: 1.3rem; color: white; margin-bottom: 15px;"><i class="fa-solid fa-list-check"></i> Assignments & Homework</h2>
-        <div class="table-container">
-            <?php if (empty($assignments)): ?>
-                <div style="padding: 25px; text-align: center; color: #94a3b8;">
-                    No active assignments.
-                </div>
-            <?php else: ?>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Assignment</th>
-                            <th>Subject</th>
-                            <th>Due Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($assignments as $assign): ?>
-                            <tr>
-                                <td style="font-weight: 600;"><?= htmlspecialchars($assign['title']) ?></td>
-                                <td style="color: #94a3b8; font-size: 0.85rem;"><?= htmlspecialchars($assign['subject_name']) ?></td>
-                                <td style="color: #f59e0b; font-weight: 600; font-size: 0.85rem;"><?= date('M d, Y', strtotime($assign['due_date'])) ?></td>
-                                <td>
-                                    <?php if ($assign['submission_id']): ?>
-                                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
-                                            Submitted (Grade: <?= htmlspecialchars($assign['grade']) ?>)
-                                        </span>
-                                    <?php else: ?>
-                                        <a href="/grade10-elearning/submit_assignment.php?id=<?= $assign['id'] ?>" class="btn btn-primary btn-sm">
-                                            Submit Now
-                                        </a>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
-    </div>
+<h2>Assignments &amp; Homework</h2>
+<div class="table-container">
+    <?php if (empty($assignments)): ?>
+        <div class="empty-state"><p>No active assignments yet.</p></div>
+    <?php else: ?>
+        <table>
+            <thead>
+                <tr>
+                    <th>Assignment</th>
+                    <th>Subject</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($assignments as $assign): ?>
+                    <tr>
+                        <td style="font-weight: 600;"><?= htmlspecialchars($assign['title']) ?></td>
+                        <td class="text-muted"><?= htmlspecialchars($assign['subject_name']) ?></td>
+                        <td><?= date('M d, Y', strtotime($assign['due_date'])) ?></td>
+                        <td>
+                            <?php if ($assign['submission_id']): ?>
+                                <span class="badge badge-graded">Submitted &middot; <?= htmlspecialchars($assign['grade']) ?></span>
+                            <?php else: ?>
+                                <a href="/grade10-elearning/submit_assignment.php?id=<?= $assign['id'] ?>" class="btn btn-primary btn-sm">Submit Now</a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 </div>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

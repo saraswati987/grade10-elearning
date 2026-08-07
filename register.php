@@ -47,60 +47,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div style="max-width: 500px; margin: 30px auto;">
-    <div class="card">
-        <div style="text-align: center; margin-bottom: 25px;">
-            <i class="fa-solid fa-user-plus" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 10px;"></i>
-            <h2 style="color: white;">Student Registration</h2>
-            <p style="color: #94a3b8; font-size: 0.9rem;">Create your Grade 10 student account</p>
-        </div>
+<div class="narrow">
+    <div class="page-header text-center">
+        <h1>Student Registration</h1>
+        <p>Create your Grade 10 student account</p>
+    </div>
 
+    <div class="card">
         <?php if ($error): ?>
-            <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
-                <i class="fa-solid fa-triangle-exclamation"></i> <?= htmlspecialchars($error) ?>
-            </div>
+            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
         <?php if ($success): ?>
-            <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
-                <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($success) ?>
-                <br><a href="login.php" style="color: white; text-decoration: underline; margin-top: 8px; display: inline-block;">Click here to Login</a>
+            <div class="alert alert-success">
+                <?= htmlspecialchars($success) ?>
+                <p class="mb-0" style="margin-top: var(--space-2);"><a href="login.php">Click here to login</a></p>
             </div>
         <?php else: ?>
-            <form id="registerForm" method="POST" action="register.php">
+            <form id="registerForm" method="POST" action="register.php" novalidate>
                 <div class="form-group">
                     <label class="form-label" for="name">Full Name *</label>
                     <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Ramesh Adhikari" required>
                 </div>
 
-                
+                <div class="form-group">
+                    <label class="form-label" for="roll_no">Roll Number</label>
+                    <input type="text" id="roll_no" name="roll_no" class="form-control" placeholder="e.g. 10-05">
+                </div>
 
                 <div class="form-group">
                     <label class="form-label" for="email">Email Address *</label>
                     <input type="email" id="email" name="email" class="form-control" placeholder="ramesh@school.edu.np" required>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="password">Password *</label>
-                    <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password *</label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="confirm_password">Confirm Password *</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-enter password" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="confirm_password">Confirm Password *</label>
-                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-enter password" required>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
-                    <i class="fa-solid fa-user-check"></i> Complete Registration
-                </button>
+                <button type="submit" class="btn btn-primary btn-block">Complete Registration</button>
             </form>
         <?php endif; ?>
 
-        <div style="margin-top: 20px; text-align: center;">
-            <p style="color: #94a3b8; font-size: 0.9rem;">
-                Already registered? <a href="login.php" style="color: #3b82f6; text-decoration: none;">Login here</a>
-            </p>
-        </div>
+        <hr>
+
+        <p class="text-center mb-0">
+            Already registered? <a href="login.php">Login here</a>
+        </p>
     </div>
 </div>
 

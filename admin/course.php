@@ -76,157 +76,92 @@ if (isset($_GET['success'])) {
 $coursesStmt = $pdo->query("SELECT * FROM subjects ORDER BY name ASC");
 $courses = $coursesStmt->fetchAll();
 ?>
+<div class="admin-content">
+  <div class="page-header">
+    <h1>Courses</h1>
+    <p>Manage your school subjects and course details.</p>
+  </div>
 
-<main>
-  <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
-    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2 class="text-title-md2 font-bold text-black dark:text-white">Courses</h2>
-        <p class="text-sm text-body">Manage your school subjects and course details.</p>
-      </div>
+  <?php if ($success !== ''): ?>
+    <div class="alert alert-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
+  <?php endif; ?>
+
+  <?php if (!empty($errors)): ?>
+    <div class="alert alert-danger">
+      <ul class="mb-0" style="padding-left: 1.1em;">
+        <?php foreach ($errors as $error): ?>
+          <li><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+  <?php endif; ?>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3 class="card-title"><?= $editingCourse ? 'Edit Course' : 'Add New Course' ?></h3>
+      <form method="post" action="course.php">
+        <input type="hidden" name="action" value="<?= $editingCourse ? 'edit' : 'create' ?>">
+        <?php if ($editingCourse): ?>
+          <input type="hidden" name="course_id" value="<?= (int) $editingCourse['id'] ?>">
+        <?php endif; ?>
+
+        <div class="form-group">
+          <label class="form-label" for="course_name">Course Name</label>
+          <input type="text" id="course_name" name="course_name" class="form-control" value="<?= htmlspecialchars($courseName, ENT_QUOTES, 'UTF-8') ?>" placeholder="Enter name of the course">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="course_code">Course Code</label>
+          <input type="text" id="course_code" name="course_code" class="form-control" value="<?= htmlspecialchars($courseCode, ENT_QUOTES, 'UTF-8') ?>" placeholder="Enter course code">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="course_description">Course Description</label>
+          <textarea id="course_description" name="course_description" class="form-control" rows="6" placeholder="Enter course description"><?= htmlspecialchars($courseDescription, ENT_QUOTES, 'UTF-8') ?></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><?= $editingCourse ? 'Update Course' : 'Create Course' ?></button>
+          <?php if ($editingCourse): ?>
+            <a href="course.php" class="btn btn-secondary">Cancel</a>
+          <?php endif; ?>
+        </div>
+      </form>
     </div>
 
-    <?php if ($success !== ''): ?>
-      <div class="mb-6 rounded-lg border border-success bg-success bg-opacity-10 px-4 py-3 text-sm text-success">
-        <?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?>
-      </div>
-    <?php endif; ?>
-
-    <?php if (!empty($errors)): ?>
-      <div class="mb-6 rounded-lg border border-red-500 bg-red-50 px-4 py-3 text-sm text-red-600">
-        <ul class="list-disc pl-5">
-          <?php foreach ($errors as $error): ?>
-            <li><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></li>
-          <?php endforeach; ?>
-        </ul>
-      </div>
-    <?php endif; ?>
-
-    <div class="grid grid-cols-1 gap-9 xl:grid-cols-3">
-      <div class="xl:col-span-1">
-        <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-          <div class="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
-            <h3 class="font-medium text-black dark:text-white">
-              <?= $editingCourse ? 'Edit Course' : 'Add New Course' ?>
-            </h3>
-          </div>
-          <div class="flex flex-col gap-5.5 p-6.5">
-            <form method="post" action="course.php">
-              <input type="hidden" name="action" value="<?= $editingCourse ? 'edit' : 'create' ?>">
-              <?php if ($editingCourse): ?>
-                <input type="hidden" name="course_id" value="<?= (int) $editingCourse['id'] ?>">
-              <?php endif; ?>
-
-              <div class="mb-5">
-                <label class="mb-3 block text-sm font-medium text-black dark:text-white">Course Name</label>
-                <input
-                  type="text"
-                  name="course_name"
-                  value="<?= htmlspecialchars($courseName, ENT_QUOTES, 'UTF-8') ?>"
-                  placeholder="Enter name of the course"
-                  class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 font-normal text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                />
-              </div>
-
-              <div class="mb-5">
-                <label class="mb-3 block text-sm font-medium text-black dark:text-white">Course Code</label>
-                <input
-                  type="text"
-                  name="course_code"
-                  value="<?= htmlspecialchars($courseCode, ENT_QUOTES, 'UTF-8') ?>"
-                  placeholder="Enter course code"
-                  class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 font-normal text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                />
-              </div>
-
-              <div class="mb-5">
-                <label class="mb-3 block text-sm font-medium text-black dark:text-white">Course Description</label>
-                <textarea
-                  name="course_description"
-                  rows="6"
-                  placeholder="Enter course description"
-                  class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent px-5 py-3 font-normal text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                ><?= htmlspecialchars($courseDescription, ENT_QUOTES, 'UTF-8') ?></textarea>
-              </div>
-
-              <div class="flex flex-wrap gap-3">
-                <button
-                  type="submit"
-                  class="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-center font-medium text-white hover:bg-opacity-90"
-                >
-                  <?= $editingCourse ? 'Update Course' : 'Create Course' ?>
-                </button>
-                <?php if ($editingCourse): ?>
-                  <a href="course.php" class="inline-flex items-center justify-center rounded-lg border border-stroke px-5 py-3 text-center font-medium text-black hover:bg-gray-2 dark:border-strokedark dark:text-white dark:hover:bg-meta-4">
-                    Cancel
-                  </a>
-                <?php endif; ?>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div class="xl:col-span-2">
-        <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-          <div class="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
-            <h3 class="font-medium text-black dark:text-white">Course List</h3>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-stroke dark:divide-strokedark">
-              <thead class="bg-gray-2 dark:bg-meta-4">
+    <div>
+      <h3 class="card-title">Course List</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Code</th>
+              <th>Description</th>
+              <th class="num">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (empty($courses)): ?>
+              <tr><td colspan="4"><div class="empty-state"><p>No courses available yet.</p></div></td></tr>
+            <?php else: ?>
+              <?php foreach ($courses as $course): ?>
                 <tr>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-black dark:text-white">Course</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-black dark:text-white">Code</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold text-black dark:text-white">Description</th>
-                  <th class="px-4 py-3 text-right text-sm font-semibold text-black dark:text-white">Actions</th>
+                  <td style="font-weight:600;"><?= htmlspecialchars($course['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                  <td class="text-muted"><?= htmlspecialchars($course['code'], ENT_QUOTES, 'UTF-8') ?></td>
+                  <td class="text-muted"><?= htmlspecialchars($course['description'], ENT_QUOTES, 'UTF-8') ?></td>
+                  <td class="num">
+                    <a href="course.php?action=edit&id=<?= (int) $course['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                    <a href="course.php?action=delete&id=<?= (int) $course['id'] ?>" onclick="return confirm('Delete this course?')" class="btn btn-danger btn-sm">Delete</a>
+                  </td>
                 </tr>
-              </thead>
-              <tbody class="divide-y divide-stroke dark:divide-strokedark">
-                <?php if (empty($courses)): ?>
-                  <tr>
-                    <td colspan="4" class="px-4 py-6 text-center text-sm text-body">No courses available yet.</td>
-                  </tr>
-                <?php else: ?>
-                  <?php foreach ($courses as $course): ?>
-                    <tr class="hover:bg-gray-2 dark:hover:bg-meta-4">
-                      <td class="px-4 py-3 text-sm text-black dark:text-white">
-                        <div class="font-medium"><?= htmlspecialchars($course['name'], ENT_QUOTES, 'UTF-8') ?></div>
-                      </td>
-                      <td class="px-4 py-3 text-sm text-body"><?= htmlspecialchars($course['code'], ENT_QUOTES, 'UTF-8') ?></td>
-                      <td class="px-4 py-3 text-sm text-body"><?= htmlspecialchars($course['description'], ENT_QUOTES, 'UTF-8') ?></td>
-                      <td class="px-4 py-3 text-right text-sm">
-                        <div class="flex justify-end gap-2">
-                          <a href="course.php?action=edit&id=<?= (int) $course['id'] ?>" class="inline-flex items-center rounded-md border border-stroke px-3 py-2 text-black hover:bg-gray-2 dark:border-strokedark dark:text-white dark:hover:bg-meta-4">
-                            <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M12 20h9"></path>
-                              <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-                            </svg>
-                            Edit
-                          </a>
-                          <a href="course.php?action=delete&id=<?= (int) $course['id'] ?>" onclick="return confirm('Delete this course?')" class="inline-flex items-center rounded-md border border-red-500 px-3 py-2 text-red-600 hover:bg-red-50">
-                            <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M3 6h18"></path>
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                              <path d="M10 11v6"></path>
-                              <path d="M14 11v6"></path>
-                            </svg>
-                            Delete
-                          </a>
-                        </div>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
-</main>
+</div>
 
-<script defer src="bundle.js"></script></body>
-</html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

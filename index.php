@@ -11,79 +11,52 @@ try {
 }
 ?>
 
-<div class="hero-section">
-    <div class="hero-text">
-        <span style="background: rgba(59,130,246,0.2); color: #60a5fa; font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; font-weight: 600;">
-            <i class="fa-solid fa-star"></i> Secondary Education Examination (SEE) Prep
-        </span>
-        <h1 style="margin-top: 15px;">Welcome to E-Learning Portal</h1>
-        <p>Access curated chapter notes, submit assignments, and prepare for your Grade 10 exams with ease.</p>
+<div class="intro-panel">
+    <h1>Grade 10 E-Learning Portal</h1>
+    <p class="lede">Chapter notes, homework, and practice quizzes for Grade 10 &mdash; SEE examination preparation, run directly by your school.</p>
 
-        <?php if (!is_logged_in()): ?>
-            <div style="display: flex; gap: 15px;">
-                <a href="/grade10-elearning/register.php" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Join as Student</a>
-                <a href="/grade10-elearning/login.php" class="btn btn-secondary"><i class="fa-solid fa-right-to-bracket"></i> Login to Portal</a>
-            </div>
-        <?php else: ?>
-            <div style="display: flex; gap: 15px;">
-                <a href="<?= $_SESSION['user_role'] === 'student' ? '/grade10-elearning/student_dashboard.php' : '/grade10-elearning/teacher_dashboard.php' ?>" class="btn btn-primary">
-                    <i class="fa-solid fa-gauge"></i> Go to Dashboard
-                </a>
-            </div>
-        <?php endif; ?>
-    </div>
-    
-    <div style="text-align: center;">
-        <i class="fa-solid fa-laptop-file" style="font-size: 8rem; color: #3b82f6; opacity: 0.8;"></i>
-    </div>
+    <?php if (!is_logged_in()): ?>
+        <div class="page-actions">
+            <a href="/grade10-elearning/register.php" class="btn btn-primary">Join as Student</a>
+            <a href="/grade10-elearning/login.php" class="btn btn-secondary">Login to Portal</a>
+        </div>
+    <?php else: ?>
+        <div class="page-actions">
+            <a href="<?= $_SESSION['user_role'] === 'student' ? '/grade10-elearning/student_dashboard.php' : '/grade10-elearning/teacher_dashboard.php' ?>" class="btn btn-primary">
+                Go to Dashboard
+            </a>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?php if (isset($_GET['error'])): ?>
-    <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 15px; border-radius: 8px; margin-bottom: 30px;">
-        <i class="fa-solid fa-circle-exclamation"></i> <?= htmlspecialchars($_GET['error']) ?>
-    </div>
+    <div class="alert alert-danger"><?= htmlspecialchars($_GET['error']) ?></div>
 <?php endif; ?>
 
-<!-- Quick Database Setup Helper Banner -->
-<div style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 35px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-    <div>
-        <strong style="color: #c084fc;"><i class="fa-solid fa-database"></i> Database First-Time Setup</strong>
-        <p style="color: #94a3b8; font-size: 0.9rem;">Using XAMPP? Initialize your MySQL database and pre-seed demo accounts with 1-click.</p>
-    </div>
-    <a href="/grade10-elearning/setup_database.php" class="btn btn-sm" style="background: #8b5cf6; color: white;"><i class="fa-solid fa-wrench"></i> Run Setup Wizard</a>
-</div>
+<?php if (isset($_GET['msg'])): ?>
+    <div class="alert alert-info"><?= htmlspecialchars($_GET['msg']) ?></div>
+<?php endif; ?>
 
-<!-- Subjects Catalog Grid -->
-<div style="margin-bottom: 25px;">
-    <h2 style="font-size: 1.6rem; color: #ffffff; margin-bottom: 5px;">Grade 10 Subjects Catalog</h2>
-    <p style="color: #94a3b8;">Select a subject to access study materials, notes & assignments.</p>
-</div>
+<h2>Grade 10 Subjects</h2>
+<p class="text-muted">Select a subject to view study notes, quizzes, and assignments.</p>
 
-<div class="grid-3">
-    <?php foreach ($subjects as $subject): ?>
-        <div class="card">
-            <div>
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fa-solid <?= htmlspecialchars($subject['icon']) ?>"></i>
-                    </div>
+<?php if (empty($subjects)): ?>
+    <div class="empty-state"><p>No subjects have been added yet.</p></div>
+<?php else: ?>
+    <ul class="subject-list">
+        <?php foreach ($subjects as $subject): ?>
+            <li>
+                <a href="/grade10-elearning/subject_detail.php?id=<?= $subject['id'] ?>" class="subject-row">
                     <div>
-                        <span style="font-size: 0.75rem; color: #3b82f6; font-weight: 700; text-transform: uppercase;">
-                            <?= htmlspecialchars($subject['code']) ?>
-                        </span>
-                        <h3 class="card-title"><?= htmlspecialchars($subject['name']) ?></h3>
+                        <span class="subject-code"><?= htmlspecialchars($subject['code']) ?></span>
+                        <h3><?= htmlspecialchars($subject['name']) ?></h3>
+                        <p class="card-desc mb-0"><?= htmlspecialchars($subject['description']) ?></p>
                     </div>
-                </div>
-                <p class="card-desc"><?= htmlspecialchars($subject['description']) ?></p>
-            </div>
-
-            <div>
-                <a href="/grade10-elearning/subject_detail.php?id=<?= $subject['id'] ?>" class="btn btn-secondary" style="width: 100%;">
-                    View Notes & Assignments <i class="fa-solid fa-arrow-right"></i>
+                    <span class="btn btn-secondary btn-sm">View &rarr;</span>
                 </a>
-            </div>
-        </div>
-    <?php endforeach; ?>
-</div>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

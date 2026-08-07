@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password'])) {
-                // Initialize PHP Native Session
+                // Regenerate session ID on login to prevent session fixation
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
                 $_SESSION['user_email'] = $user['email'];
@@ -62,67 +63,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div style="max-width: 480px; margin: 30px auto;">
-    <div class="card">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <i class="fa-solid fa-user-lock" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 10px;"></i>
-            <h2 style="color: white; font-size: 1.8rem;">Login Portal</h2>
-            <p style="color: #94a3b8; font-size: 0.9rem;">Student & Teacher Login</p>
-        </div>
+<div class="narrow">
+    <div class="page-header text-center">
+        <h1>Login</h1>
+        <p>Student &amp; teacher sign in</p>
+    </div>
 
+    <div class="card">
         <?php if (!$dbReady): ?>
-            <!-- Database Setup Alert Banner -->
-            <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                <i class="fa-solid fa-triangle-exclamation"></i> <strong>Database Not Initialized Yet</strong><br>
-                <p style="font-size: 0.85rem; margin: 5px 0 10px; color: #fde68a;">Click below to run 1-click database setup for XAMPP MySQL.</p>
-                <a href="setup_database.php?auto=1" class="btn btn-primary btn-sm" style="background: #f59e0b; color: black; font-weight: 700;">
-                    <i class="fa-solid fa-bolt"></i> Run 1-Click Database Setup
-                </a>
+            <div class="alert alert-warning">
+                <strong>Database not initialized yet.</strong>
+                <p class="mt-0 mb-0">Run the one-time setup to create tables and demo accounts.</p>
+                <div class="form-actions">
+                    <a href="setup_database.php?auto=1" class="btn btn-secondary btn-sm">Run Database Setup</a>
+                </div>
             </div>
         <?php endif; ?>
 
         <?php if ($msg): ?>
-            <div class="alert alert-info">
-                <i class="fa-solid fa-info-circle"></i> <?= htmlspecialchars($msg) ?>
-            </div>
+            <div class="alert alert-info"><?= htmlspecialchars($msg) ?></div>
         <?php endif; ?>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger">
-                <i class="fa-solid fa-triangle-exclamation"></i> <?= htmlspecialchars($error) ?>
-            </div>
+            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <!-- Form: PHP Login Submission -->
-        <form method="POST" action="login.php">
-            <div class="form-group">
-                <label class="form-label" for="email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+        <form method="POST" action="login.php" novalidate>
+            <div class="form-group<?= $error ? ' has-error' : '' ?>">
+                <label class="form-label" for="email">Email Address</label>
                 <input type="email" id="email" name="email" class="form-control" placeholder="student@school.edu.np" required>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="password"><i class="fa-solid fa-key"></i> Password</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+            <div class="form-group<?= $error ? ' has-error' : '' ?>">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                <?php if ($error): ?><span class="field-error"><?= htmlspecialchars($error) ?></span><?php endif; ?>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">
-                <i class="fa-solid fa-right-to-bracket"></i> Login 
-            </button>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
         </form>
 
-        <!-- Quick Demo Fill Helper -->
-        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #334155; text-align: center;">
-            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 12px;">Pre-configured Demo Login Credentials:</p>
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('student@school.edu.np')">
-                    <i class="fa-solid fa-user-graduate"></i> Student Demo
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('teacher@school.edu.np')">
-                    <i class="fa-solid fa-chalkboard-user"></i> Teacher Demo
-                </button>
+        <hr>
+
+        <div class="text-center">
+            <p class="text-muted" style="font-size: var(--text-xs);">Demo credentials (password: <code>password123</code>)</p>
+            <div class="page-actions" style="justify-content: center;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('student@school.edu.np')">Student Demo</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('teacher@school.edu.np')">Teacher Demo</button>
             </div>
         </div>
     </div>
+
+    <p class="text-center" style="margin-top: var(--space-4);">
+        <a href="register.php">Don't have an account? Register here</a>
+    </p>
 </div>
 
 <script>

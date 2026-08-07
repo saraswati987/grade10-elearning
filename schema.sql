@@ -43,6 +43,44 @@ CREATE TABLE IF NOT EXISTS `materials` (
 
 
 
+-- Quizzes Table
+CREATE TABLE IF NOT EXISTS `quizzes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `subject_id` INT NOT NULL,
+    `title` VARCHAR(150) NOT NULL,
+    `description` TEXT,
+    `duration_mins` INT NOT NULL DEFAULT 10,
+    `created_by` INT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Quiz Questions Table
+CREATE TABLE IF NOT EXISTS `quiz_questions` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `quiz_id` INT NOT NULL,
+    `question_text` TEXT NOT NULL,
+    `option_a` VARCHAR(255) NOT NULL,
+    `option_b` VARCHAR(255) NOT NULL,
+    `option_c` VARCHAR(255) DEFAULT NULL,
+    `option_d` VARCHAR(255) DEFAULT NULL,
+    `correct_option` ENUM('A','B','C','D') NOT NULL,
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Quiz Attempts Table
+CREATE TABLE IF NOT EXISTS `quiz_attempts` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `quiz_id` INT NOT NULL,
+    `student_id` INT NOT NULL,
+    `score` INT NOT NULL DEFAULT 0,
+    `total_questions` INT NOT NULL DEFAULT 0,
+    `submitted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 7. Assignments Table
 CREATE TABLE IF NOT EXISTS `assignments` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,

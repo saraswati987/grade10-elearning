@@ -58,10 +58,10 @@ $evaluateSubmission = NULL;
 if (isset($_GET['evaluate'])) {
     $eval_id = (int)$_GET['evaluate'];
     $stmtEval = $pdo->prepare("
-        SELECT sub.*, u.name as student_name, a.title as assignment_title 
-        FROM submissions sub 
-        JOIN users u ON sub.student_id = u.id 
-        JOIN assignments a ON sub.assignment_id = a.id 
+        SELECT sub.*, u.name as student_name, a.title as assignment_title
+        FROM submissions sub
+        JOIN users u ON sub.student_id = u.id
+        JOIN assignments a ON sub.assignment_id = a.id
         WHERE sub.id = ?
     ");
     $stmtEval->execute([$eval_id]);
@@ -71,51 +71,37 @@ if (isset($_GET['evaluate'])) {
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div style="margin-bottom: 30px;">
-    <h1 style="color: white; font-size: 2rem;"><i class="fa-solid fa-pen-to-square" style="color: #10b981;"></i> Manage Assignments & Homework</h1>
-    <p style="color: #94a3b8;">Post homework tasks and review/grade submitted work from Grade 10 students.</p>
+<div class="page-header">
+    <h1>Manage Assignments</h1>
+    <p>Post homework tasks and review/grade submitted work from Grade 10 students.</p>
 </div>
 
 <?php if ($message): ?>
-    <div style="background: <?= $status === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)' ?>; border: 1px solid <?= $status === 'success' ? '#10b981' : '#ef4444' ?>; color: <?= $status === 'success' ? '#34d399' : '#f87171' ?>; padding: 12px; border-radius: 8px; margin-bottom: 25px;">
-        <?= htmlspecialchars($message) ?>
-    </div>
+    <div class="alert alert-<?= $status ?>"><?= htmlspecialchars($message) ?></div>
 <?php endif; ?>
 
-<!-- Grading Modal Box if 'evaluate' parameter is passed -->
 <?php if ($evaluateSubmission): ?>
-    <div class="card" style="border-color: #10b981; margin-bottom: 35px; background: #0f172a;">
-        <h3 style="color: #34d399; font-size: 1.3rem; margin-bottom: 15px;">
-            <i class="fa-solid fa-graduation-cap"></i> Evaluate Student Homework Submission
-        </h3>
+    <div class="card" style="margin-bottom: var(--space-6);">
+        <h3 class="card-title">Evaluate Submission</h3>
 
-        <div style="background: #1e293b; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-            <p><strong>Student:</strong> <?= htmlspecialchars($evaluateSubmission['student_name']) ?></p>
-            <p><strong>Assignment:</strong> <?= htmlspecialchars($evaluateSubmission['assignment_title']) ?></p>
-            
-            <?php if ($evaluateSubmission['submission_text']): ?>
-                <div style="margin-top: 10px; background: #0f172a; padding: 12px; border-radius: 6px; color: #cbd5e1; white-space: pre-wrap;">
-                    <strong>Student Typed Solution:</strong><br>
-                    <?= htmlspecialchars($evaluateSubmission['submission_text']) ?>
-                </div>
-            <?php endif; ?>
+        <p><strong>Student:</strong> <?= htmlspecialchars($evaluateSubmission['student_name']) ?></p>
+        <p><strong>Assignment:</strong> <?= htmlspecialchars($evaluateSubmission['assignment_title']) ?></p>
 
-            <?php if ($evaluateSubmission['file_path']): ?>
-                <div style="margin-top: 10px;">
-                    <a href="<?= htmlspecialchars($evaluateSubmission['file_path']) ?>" download class="btn btn-secondary btn-sm">
-                        <i class="fa-solid fa-download"></i> Download Attached Student File
-                    </a>
-                </div>
-            <?php endif; ?>
-        </div>
+        <?php if ($evaluateSubmission['submission_text']): ?>
+            <div class="content-body"><strong>Student's typed answer:</strong><br><?= htmlspecialchars($evaluateSubmission['submission_text']) ?></div>
+        <?php endif; ?>
+
+        <?php if ($evaluateSubmission['file_path']): ?>
+            <p><a href="<?= htmlspecialchars($evaluateSubmission['file_path']) ?>" download class="btn btn-secondary btn-sm">Download Attached File</a></p>
+        <?php endif; ?>
 
         <form method="POST">
             <input type="hidden" name="action_type" value="grade_submission">
             <input type="hidden" name="submission_id" value="<?= $evaluateSubmission['id'] ?>">
 
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+            <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="grade">Award Grade / Marks *</label>
+                    <label class="form-label" for="grade">Award Grade *</label>
                     <select id="grade" name="grade" class="form-control" required>
                         <option value="A+">A+ (Outstanding)</option>
                         <option value="A">A (Excellent)</option>
@@ -127,23 +113,22 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="feedback">Teacher Feedback Comments</label>
+                    <label class="form-label" for="feedback">Teacher Feedback</label>
                     <input type="text" id="feedback" name="feedback" class="form-control" placeholder="e.g. Well done! Correct steps for Q3." value="<?= htmlspecialchars($evaluateSubmission['feedback'] ?? '') ?>">
                 </div>
             </div>
 
-            <div style="display: flex; gap: 15px;">
-                <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Save Grade</button>
-                <a href="manage_assignments.php" class="btn btn-secondary">Close Evaluator</a>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">Save Grade</button>
+                <a href="manage_assignments.php" class="btn btn-secondary">Close</a>
             </div>
         </form>
     </div>
 <?php endif; ?>
 
-<div class="grid-2" style="margin-bottom: 40px;">
-    <!-- Form: Post Assignment -->
+<div class="grid grid-2">
     <div class="card">
-        <h3 style="color: white; font-size: 1.25rem; margin-bottom: 15px;"><i class="fa-solid fa-plus-circle"></i> Post New Assignment</h3>
+        <h3 class="card-title">Post New Assignment</h3>
         <form method="POST">
             <input type="hidden" name="action_type" value="create_assignment">
 
@@ -168,29 +153,26 @@ require_once __DIR__ . '/includes/header.php';
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="due_date">Due Submission Date *</label>
+                <label class="form-label" for="due_date">Due Date *</label>
                 <input type="date" id="due_date" name="due_date" class="form-control" value="<?= date('Y-m-d', strtotime('+7 days')) ?>" required>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; background: #10b981;">
-                <i class="fa-solid fa-paper-plane"></i> Publish Assignment
-            </button>
+            <button type="submit" class="btn btn-primary btn-block">Publish Assignment</button>
         </form>
     </div>
 
-    <!-- Table: Student Submissions List -->
     <div>
-        <h3 style="color: white; font-size: 1.25rem; margin-bottom: 15px;"><i class="fa-solid fa-inbox"></i> Student Homework Submissions</h3>
+        <h3 class="card-title">Student Homework Submissions</h3>
         <div class="table-container">
             <?php if (empty($submissions)): ?>
-                <div style="padding: 25px; text-align: center; color: #94a3b8;">No homework submissions yet.</div>
+                <div class="empty-state"><p>No homework submissions yet.</p></div>
             <?php else: ?>
                 <table>
                     <thead>
                         <tr>
                             <th>Student</th>
                             <th>Assignment</th>
-                            <th>Status / Grade</th>
+                            <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -199,20 +181,18 @@ require_once __DIR__ . '/includes/header.php';
                             <tr>
                                 <td style="font-weight: 600;">
                                     <?= htmlspecialchars($sub['student_name']) ?>
-                                    <small style="display: block; color: #94a3b8; font-weight: normal;"><?= htmlspecialchars($sub['subject_name']) ?></small>
+                                    <small style="display:block; font-weight: normal;"><?= htmlspecialchars($sub['subject_name']) ?></small>
                                 </td>
                                 <td><?= htmlspecialchars($sub['assignment_title']) ?></td>
                                 <td>
                                     <?php if ($sub['grade'] === 'Pending'): ?>
-                                        <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">Pending</span>
+                                        <span class="badge badge-pending">Pending</span>
                                     <?php else: ?>
-                                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;"><?= htmlspecialchars($sub['grade']) ?></span>
+                                        <span class="badge badge-graded"><?= htmlspecialchars($sub['grade']) ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="manage_assignments.php?evaluate=<?= $sub['id'] ?>" class="btn btn-primary btn-sm">
-                                        Evaluate
-                                    </a>
+                                    <a href="manage_assignments.php?evaluate=<?= $sub['id'] ?>" class="btn btn-primary btn-sm">Evaluate</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

@@ -32,18 +32,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Handle File Upload
         if ($content_type === 'pdf' && isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = __DIR__ . '/uploads/';
-            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+            $uploaded = $_FILES['material_file'];
+            $allowedExt = ['pdf', 'doc', 'docx'];
+            $maxSize = 10 * 1024 * 1024; // 10 MB
+            $ext = strtolower(pathinfo($uploaded['name'], PATHINFO_EXTENSION));
 
-            $fileName = time() . '_' . basename($_FILES['material_file']['name']);
-            if (move_uploaded_file($_FILES['material_file']['tmp_name'], $uploadDir . $fileName)) {
-                $file_path = 'uploads/' . $fileName;
+            if (!in_array($ext, $allowedExt, true)) {
+                $message = 'Unsupported file type. Allowed: ' . implode(', ', $allowedExt) . '.';
+                $status = 'danger';
+            } elseif ($uploaded['size'] > $maxSize) {
+                $message = 'File is too large. Maximum size is 10MB.';
+                $status = 'danger';
+            } else {
+                $uploadDir = __DIR__ . '/uploads/';
+                if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+
+                // Generate a random filename to avoid path traversal / collisions / trusting user input
+                $fileName = bin2hex(random_bytes(16)) . '.' . $ext;
+                if (move_uploaded_file($uploaded['tmp_name'], $uploadDir . $fileName)) {
+                    $file_path = 'uploads/' . $fileName;
+                } else {
+                    $message = 'Failed to upload the file.';
+                    $status = 'danger';
+                }
             }
         }
 
-        try {
+        if ($status !== 'danger') try {
             $stmt = $pdo->prepare("
-                INSERT INTO materials (subject_id, title, description, content_type, file_path, external_link, content_body, uploaded_by) 
+                INSERT INTO materials (subject_id, title, description, content_type, file_path, external_link, content_body, uploaded_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$subject_id, $title, $description, $content_type, $file_path, $external_link, $content_body, $teacher_id]);
@@ -61,9 +78,9 @@ $subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
 
 // Fetch Existing Materials
 $stmt = $pdo->query("
-    SELECT m.*, s.name as subject_name 
-    FROM materials m 
-    JOIN subjects s ON m.subject_id = s.id 
+    SELECT m.*, s.name as subject_name
+    FROM materials m
+    JOIN subjects s ON m.subject_id = s.id
     ORDER BY m.id DESC
 ");
 $materials = $stmt->fetchAll();
@@ -71,22 +88,19 @@ $materials = $stmt->fetchAll();
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div style="margin-bottom: 30px;">
-    <h1 style="color: white; font-size: 2rem;"><i class="fa-solid fa-file-circle-plus" style="color: #3b82f6;"></i> Manage Study Notes & Materials</h1>
-    <p style="color: #94a3b8;">Publish chapter guides, PDF notes, and learning resources for Grade 10 students.</p>
+<div class="page-header">
+    <h1>Manage Study Materials</h1>
+    <p>Publish chapter guides, PDF notes, and learning resources for Grade 10 students.</p>
 </div>
 
 <?php if ($message): ?>
-    <div style="background: <?= $status === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)' ?>; border: 1px solid <?= $status === 'success' ? '#10b981' : '#ef4444' ?>; color: <?= $status === 'success' ? '#34d399' : '#f87171' ?>; padding: 12px; border-radius: 8px; margin-bottom: 25px;">
-        <?= htmlspecialchars($message) ?>
-    </div>
+    <div class="alert alert-<?= $status ?>"><?= htmlspecialchars($message) ?></div>
 <?php endif; ?>
 
-<div class="grid-2">
-    <!-- Form: Add Material -->
+<div class="grid grid-2">
     <div class="card">
-        <h3 style="color: white; font-size: 1.3rem; margin-bottom: 20px;"><i class="fa-solid fa-plus-circle"></i> Add New Study Material</h3>
-        
+        <h3 class="card-title">Add New Study Material</h3>
+
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label" for="subject_id">Grade 10 Subject *</label>
@@ -132,18 +146,15 @@ require_once __DIR__ . '/includes/header.php';
                 <input type="url" id="external_link" name="external_link" class="form-control" placeholder="https://youtube.com/...">
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Publish Material
-            </button>
+            <button type="submit" class="btn btn-primary btn-block">Publish Material</button>
         </form>
     </div>
 
-    <!-- Table: Existing Materials -->
     <div>
-        <h3 style="color: white; font-size: 1.3rem; margin-bottom: 15px;"><i class="fa-solid fa-list"></i> Published Notes List</h3>
+        <h3 class="card-title">Published Notes List</h3>
         <div class="table-container">
             <?php if (empty($materials)): ?>
-                <div style="padding: 25px; text-align: center; color: #94a3b8;">No study materials published yet.</div>
+                <div class="empty-state"><p>No study materials published yet.</p></div>
             <?php else: ?>
                 <table>
                     <thead>
@@ -158,14 +169,10 @@ require_once __DIR__ . '/includes/header.php';
                         <?php foreach ($materials as $m): ?>
                             <tr>
                                 <td style="font-weight: 600;"><?= htmlspecialchars($m['title']) ?></td>
-                                <td style="color: #94a3b8; font-size: 0.85rem;"><?= htmlspecialchars($m['subject_name']) ?></td>
+                                <td class="text-muted"><?= htmlspecialchars($m['subject_name']) ?></td>
+                                <td><span class="badge badge-<?= htmlspecialchars($m['content_type']) ?>"><?= strtoupper(htmlspecialchars($m['content_type'])) ?></span></td>
                                 <td>
-                                    <span class="badge badge-<?= htmlspecialchars($m['content_type']) ?>"><?= strtoupper(htmlspecialchars($m['content_type'])) ?></span>
-                                </td>
-                                <td>
-                                    <a href="manage_materials.php?delete=<?= $m['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this material?');">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
+                                    <a href="manage_materials.php?delete=<?= $m['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this material?');">Delete</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
