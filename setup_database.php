@@ -1,9 +1,8 @@
 <?php
 // setup_database.php - One-time installer: creates the schema, seed data and
 // the uploads folder. Refuses to run again once the system is in use.
-$host = 'localhost';
-$username = 'root';
-$password = '';
+define('DB_CREDENTIALS_ONLY', true);
+require __DIR__ . '/config/db.php'; // gives $host, $dbname, $username, $password
 
 $message = '';
 $status = '';
@@ -11,7 +10,7 @@ $done = false;
 $alreadyInstalled = false;
 
 try {
-    $probe = new PDO("mysql:host=$host;dbname=elearning_db;charset=utf8mb4", $username, $password, [
+    $probe = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
     $alreadyInstalled = (int)$probe->query("SELECT COUNT(*) FROM users")->fetchColumn() > 0;
@@ -56,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/';
+$base = BASE_URL;
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -15,6 +15,12 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', rtrim($dir, '/') . '/');
 }
 
+// setup_database.php needs these credentials but must not connect to a
+// database that does not exist yet.
+if (defined('DB_CREDENTIALS_ONLY')) {
+    return;
+}
+
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
